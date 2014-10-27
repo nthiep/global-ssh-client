@@ -3,8 +3,8 @@ import pymongo
 from pymongo import Connection
 class User():
 	def __init__(self, username):
-		cn = Connection("mongodb://nthiep:16081992761312nth@linus.mongohq.com:10092/app30915045")
-		self.db = cn.app30915045
+		cn = Connection("link moongodata")
+		self.db = cn.data
 		self.username = username
 	def check(self):		
 		q = { "user": self.username }
