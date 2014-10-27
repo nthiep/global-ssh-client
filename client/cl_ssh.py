@@ -1,6 +1,7 @@
 from threading import Thread
-import os, sys, socket, time
+import sys, socket
 import getpass
+from paramiko.py3compat import input
 import paramiko
 import traceback
 try:
@@ -23,18 +24,19 @@ class SSH(Thread):
 		self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 	def run(self):
-		target = self.address
+		if self.me == self.address:
+			target = self.localadd
+		else:
+			target = self.address
 		self.s.bind(("", self.port))
 		self.s.connect_ex((target, self.port + 1))
-		time.sleep(1)
 		print "ssh connected to %s:%d" % (target, self.port + 1)
 		try:
 			client = paramiko.SSHClient()
 			client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 			client.load_system_host_keys()
-			key_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
 			print('*** Connecting... ***')
-			client.connect(target, self.port +1, username="user", password="pass", sock=self.s)			
+			client.connect(target, self.port +1 , sock=self.s)			
 			chan = client.invoke_shell()
 			print('***  Global SSH: ssh connected ***\n')
 			conn = True

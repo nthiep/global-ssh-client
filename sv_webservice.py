@@ -1,7 +1,7 @@
 import sys, time, os, datetime, hashlib, random
 from functools import wraps
 from flask import Flask, request, Response, json, render_template, session, redirect, url_for, render_template, flash
-#from flask_sockets import Sockets
+from flask_sockets import Sockets
 from sv_user import User
 global lsclient
 lsclient = []
@@ -10,7 +10,7 @@ app.secret_key = "1234567890"
 app.debug = 'DEBUG' in os.environ
 app.config['DEBUG'] = True
 app.config['DEBUG'] = os.environ.get('DEBUG', False)
-#sockets = Sockets(app)
+sockets = Sockets(app)
 
 class Client(object):
     def __init__(self, name, addr, localadd, connection):
@@ -441,9 +441,7 @@ def api_about():
 def page_not_found(e):
     return render_template('404.html'), 404
 
-if __name__ == '__main__':
-    app.run()
-"""
+
 @sockets.route('/socklogin')
 def sock_login(ws):
     message = ws.receive()
@@ -454,6 +452,7 @@ def sock_login(ws):
         print "New connection started for %s" % data['address']
         u = User(data['username'])
         u.addlogs(str(datetime.datetime.now()), 'logged in at %s' % data['address'])
+        ws.send("ok")
         while True:
             time.sleep(20)
             ws.send("ok")
@@ -462,9 +461,7 @@ def sock_login(ws):
 
 @sockets.route('/sock')
 def sock(ws):
-    i.append(ws)
     while True:
         time.sleep(10)
         ws.send("ok")
     ws.close()
-"""

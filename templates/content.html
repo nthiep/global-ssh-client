@@ -1,6 +1,5 @@
 {% extends "header.html" %}
 {% block title %} {% print page %} {% endblock %}
-
 {% block table %}
 <link href="static/bootstrap-table.css" rel="stylesheet" media="screen">
 <script src="static/bootstrap-table.js"></script>
@@ -36,29 +35,37 @@ show all friend request:
 
 {% block content %}
 {% if page == "logs" %}
-<table data-toggle="table" data-height="480">
+<div class="row">
+    <div class="col-lg-12">
+        <h2>Logs Activities</h2>
+        <div class="table-responsive">
+            <table data-toggle="table" class="table table-bordered table-hover">
 	<thead>
 	        <tr>
 	            <th >Time</th>
 	            <th >Logs</th>
 	        </tr>
-	    </thead>
+	</thead>
 	<tbody>
 	{% for l in data %}
 		 <tr><td>
 			{% 	print l['time'] %}
 		</td><td>
-		<font color = "blue">
+		<font color = "#292929">
 			{% 	print l['logs'] %}
 		</font></td></tr>
 	{% endfor %}
 	</tbody>
-	</table>
+	</table></div></div></div>
 {% endif %}
 
 {% if page == "friends" %}
 
-<table data-toggle="table" data-height="480">
+<div class="row">
+    <div class="col-lg-12">
+        <h2>Friends list</h2>
+        <div class="table-responsive">
+            <table data-toggle="table" class="table table-bordered table-hover">
 	<thead>
 	        <tr>
 	            <th >Friend</th>
@@ -67,19 +74,23 @@ show all friend request:
 	    </thead>
 	<tbody>
 	{% for l in data %}
-		<tr><td><a href = "/user/{{ l['friend'] }}">
+		<tr><td><a href = "/user/{{ l['friend'] }}"	>
 			{% 	print l['friend'] %}
 		</a></td><td>
-		<font color = "blue">
+		<font color = "#292929">
 			{% 	print l['status'] %}
 		</font></td></tr>
 		{% endfor %}
 	</tbody>
-</table>
+</table></div></div></div>
 		{% endif %}
 
 {% if page == "onlines" %}
-<table data-toggle="table" data-height="480">
+<div class="row">
+    <div class="col-lg-12">
+        <h2>Onlines friends</h2>
+        <div class="table-responsive">
+            <table data-toggle="table" class="table table-bordered table-hover">
 	<thead>
 	        <tr>
 	            <th >Friend</th>
@@ -90,18 +101,22 @@ show all friend request:
 	{% for l in data %}
 	<tr><td><a href = "/user/{{ l['friend'] }}">
 		{% 	print l['friend'] %}
-	</a></td><td><font color = "blue">
+	</a></td><td><font color = "#292929">
 		{% 	print l['status'] %}
 	</font></td></tr>
 	{% endfor %}
 	</tbody>
-</table>
+</table></div></div></div>
 	{% endif %}
 
 {% if page == "friendrq" %}
 
 {% if data[0]['error'] %}
-<table data-toggle="table" data-height="250">
+<div class="row">
+    <div class="col-lg-12">
+        <h2>Logs Activitive</h2>
+        <div class="table-responsive">
+            <table data-toggle="table" class="table table-bordered table-hover">
 	<thead>
         <tr>
 		<th >Request</th>
@@ -113,8 +128,13 @@ show all friend request:
 	</thead>
 	<tbody>
 </table>
+</div></div></div>
 {% else %}
-<table data-toggle="table" data-height="480">
+<div class="row">
+    <div class="col-lg-12">
+        <h2>Logs Activitive</h2>
+        <div class="table-responsive">
+            <table data-toggle="table" class="table table-bordered table-hover">
 	<thead>
 	        <tr>
 	            <th >Request</th>
@@ -127,7 +147,7 @@ show all friend request:
 	{% for l in data %}
 		<tr><td>
 			{% 	print l['request'] %}
-		</td><td><font color = "blue">
+		</td><td><font color = "#292929">
 			{% 	print l['time'] %}
 		</font></td><td>
 			<form action="/accept" method="post">
@@ -142,9 +162,7 @@ show all friend request:
 		</td></tr>
 	{% endfor %}
 	</tbody>
-</table>
+</table></div></div></div>
 {% endif %}
 {% endif %}
-
-{% include "footer.html" %}
 {% endblock %}

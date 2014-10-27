@@ -1,0 +1,57 @@
+<html>
+  <head>
+    <title>{% block title %}{% endblock %} - Global-SSH</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/static/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="/static/bootstrap-theme.min.css" rel="stylesheet" media="screen">    
+    <link href="/static/page.css" rel="stylesheet" media="screen">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    {% block login %}{% endblock %}
+    {% block table %}{% endblock %}
+  </head>
+<body class = "full">
+
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Global-SSH</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li {% if ac == 0 %}class="active"{% endif %}><a href="/">Home</a></li>				          
+        <li {% if ac == 1 %}class="active"{% endif %}><a href="/friends">friends</a></li>
+        <li {% if ac == 2 %}class="active"{% endif %}><a href="/onlines">onlines</a></li>
+        <li {% if ac == 3 %}class="active"{% endif %}><a href="/add">Add friend</a></li>
+        <li {% if ac == 4 %}class="active"{% endif %}><a href="/logs">logs</a></li>
+        <li {% if ac == 5 %}class="active"{% endif %}><a href="/friendrq">friend request</a></li>
+        <li {% if ac == 6 %}class="active"{% endif %}><a href="/about">About</a></li>
+        {% if 'logged_in' in session: %}
+        <li {% if ac == 10 %}class="active"{% endif %}><a href="/user/{{ session["username"] }}">{{ session["username"] }}</a></li>        
+        <li><a href="/logout">logout</a></li>
+        {% else: %}
+        <li {% block lg %}{% endblock %}><a href="/login">login</a></li>
+        <li {% block rg %}{% endblock %}><a href="/register">register</a></li>
+        {% endif %}  
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+  <div class="content">
+  <div class="container">
+  <div class="page-header">
+    <div class="row-fluid">
+      <h3>
+      {% block info %}{% endblock %}
+      </h3>
+    </div>
+  </div>
+  {% block content %}{% endblock %}
+ </div>
+    <!-- /.container -->
+</div>

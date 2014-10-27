@@ -1,0 +1,36 @@
+{% extends "header.html" %}
+{% block title %} 
+{% if 'error' in info[0]: %} 
+friend not found
+{% else %} 
+{{ user }} 
+{% endif %}
+{% endblock %}
+
+{% if user == session["username"] %}
+{% set ac = 10 %}
+{% endif %}
+
+{% block content %}
+<div class="container">
+<div class="content">
+<h1>{% if 'error' in info[0]: %}
+    {{ info[0]['error'] }}
+  {% else %} 
+  {{ user }} Profile
+  </h1>
+<h3><div id="time_span"></div></h3>
+<h3>{{ user }} is: {{ info[0]['status'] }}</h3>
+<h3>public key is: </h3>
+<textarea class="form-control" rows="5">{{ info[0]['key'] }}</textarea>
+{% endif %}
+</div>
+<script type='text/javascript'>
+      function updateTime(){
+          var date = new Date().toString()
+          document.getElementById('time_span').innerHTML = date;
+      }
+      setInterval(updateTime, 1000);
+</script>
+{% include "footer.html" %}
+{% endblock %}

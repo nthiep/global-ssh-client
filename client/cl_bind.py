@@ -30,10 +30,12 @@ class Bind(Thread):
 				destination.shutdown(socket.SHUT_WR)
 		
 	def run(self):
-		target = self.address
+		if self.me == self.address:
+			target = self.localadd
+		else:
+			target = self.address
 		self.s.bind(("", self.port + 1))
 		self.s.connect_ex((target, self.port))
-
 		print "bind connected to %s:%d" % (target, self.port)
 		#start bind ssh
 		fw_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

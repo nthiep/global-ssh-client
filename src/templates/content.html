@@ -1,0 +1,150 @@
+{% extends "header.html" %}
+{% block title %} {% print page %} {% endblock %}
+
+{% block table %}
+<link href="static/bootstrap-table.css" rel="stylesheet" media="screen">
+<script src="static/bootstrap-table.js"></script>
+{% endblock %}
+
+{% if page == "logs" %}
+{% set ac = 4 %}
+{% endif %}
+{% if page == "friends" %}
+{% set ac = 1 %}
+{% endif %}
+{% if page == "onlines" %}
+{% set ac = 2 %}
+{% endif %}
+{% if page == "friendrq" %}
+{% set ac = 5 %}
+{% endif %}
+
+{% block info %}
+{% if page == "logs" %}
+show all logs:
+{% endif %}
+{% if page == "friends" %}
+show all friends:
+{% endif %}
+{% if page == "onlines" %}
+show all friends online:
+{% endif %}
+{% if page == "friendrq" %}
+show all friend request:
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if page == "logs" %}
+<table data-toggle="table" data-height="480">
+	<thead>
+	        <tr>
+	            <th >Time</th>
+	            <th >Logs</th>
+	        </tr>
+	    </thead>
+	<tbody>
+	{% for l in data %}
+		 <tr><td>
+			{% 	print l['time'] %}
+		</td><td>
+		<font color = "blue">
+			{% 	print l['logs'] %}
+		</font></td></tr>
+	{% endfor %}
+	</tbody>
+	</table>
+{% endif %}
+
+{% if page == "friends" %}
+
+<table data-toggle="table" data-height="480">
+	<thead>
+	        <tr>
+	            <th >Friend</th>
+	            <th >Status</th>
+	        </tr>
+	    </thead>
+	<tbody>
+	{% for l in data %}
+		<tr><td><a href = "/user/{{ l['friend'] }}">
+			{% 	print l['friend'] %}
+		</a></td><td>
+		<font color = "blue">
+			{% 	print l['status'] %}
+		</font></td></tr>
+		{% endfor %}
+	</tbody>
+</table>
+		{% endif %}
+
+{% if page == "onlines" %}
+<table data-toggle="table" data-height="480">
+	<thead>
+	        <tr>
+	            <th >Friend</th>
+	            <th >Status</th>
+	        </tr>
+	    </thead>
+	<tbody>
+	{% for l in data %}
+	<tr><td><a href = "/user/{{ l['friend'] }}">
+		{% 	print l['friend'] %}
+	</a></td><td><font color = "blue">
+		{% 	print l['status'] %}
+	</font></td></tr>
+	{% endfor %}
+	</tbody>
+</table>
+	{% endif %}
+
+{% if page == "friendrq" %}
+
+{% if data[0]['error'] %}
+<table data-toggle="table" data-height="250">
+	<thead>
+        <tr>
+		<th >Request</th>
+        <th >Time</th>
+        <th >Accpet</th>
+        <th >Denied</th>
+		</th>
+        </tr>
+	</thead>
+	<tbody>
+</table>
+{% else %}
+<table data-toggle="table" data-height="480">
+	<thead>
+	        <tr>
+	            <th >Request</th>
+	            <th >Time</th>
+	            <th >Accpet</th>
+	            <th >Denied</th>
+	        </tr>
+	    </thead>
+	<tbody>
+	{% for l in data %}
+		<tr><td>
+			{% 	print l['request'] %}
+		</td><td><font color = "blue">
+			{% 	print l['time'] %}
+		</font></td><td>
+			<form action="/accept" method="post">
+			        <input type="hidden" name="peer" value="{{ l['request'] }}">         
+			        <input class="btn btn-default" type="submit" value="accept">
+			</form>
+		</td><td>
+			<form action="/denied" method="post">
+	        <input type="hidden" name="peer" value="{{ l['request'] }}">         
+	        <input class="btn btn-default" type="submit" value="denied">
+			</form>
+		</td></tr>
+	{% endfor %}
+	</tbody>
+</table>
+{% endif %}
+{% endif %}
+
+{% include "footer.html" %}
+{% endblock %}

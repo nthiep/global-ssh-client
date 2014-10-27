@@ -1,0 +1,414 @@
+
+import sys, os, datetime, hashlib, random
+from functools import wraps
+from flask import Flask, request, Request, Response, jsonify, json, render_template, session, redirect, url_for, render_template, flash
+from sv_user import User
+from sv_frame import Frame
+import sv_lsclient
+
+app = Flask(__name__)
+app.secret_key = "1234567890"
+app.config['DEBUG'] = True
+
+def check_auth(username, password):
+    u = User(username)
+    if u.check() and u.auth(password):
+        return True
+    return False
+
+def authenticate():
+    return Response('You login with wrong credentials', 401,
+    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if request.headers['Content-Type'] == 'application/json':
+            auth = request.authorization
+            if not auth:
+                return authenticate()
+
+            elif not check_auth(auth.username, auth.password):
+                return authenticate()
+        else:
+            if 'login' in request.path or 'register' in request.path:
+                return f(*args, **kwargs)
+            if 'logged_in' in session:
+                return f(*args, **kwargs)
+            else:
+                flash("you must login first.")
+                return redirect(url_for('api_login'))
+        return f(*args, **kwargs)
+    return decorated
+
+def register(user, pswd):
+    u = User(user)
+    if u.check():
+        return "The username has already exist! please choose another one"
+    else:
+        u.register(pswd)
+        u.addlogs(str(datetime.datetime.now()), 'registered successful at %s' % request.remote_addr)
+        return "Congratulations your registration has been successful! Now you can use services"
+def checklogin(user):
+    for u in sv_lsclient.lsclient:
+        if u.name == user:
+            return True
+    return False
+
+def login(user, pswd):
+    u = User(user)
+    if checklogin(user):
+        u.addlogs(str(datetime.datetime.now()), 'login error: duplicate login at %s' % request.remote_addr)
+        return json.dumps({"error": "you has login another machine"})
+    code = random.getrandbits(128)
+    hashcode = hashlib.sha1(str(code)).hexdigest()
+    sv_lsclient.loginrq[hashcode] = user
+    return json.dumps({"hashcode": hashcode})
+
+def user(user, peer):
+    res = []
+    u = User(user)
+    p = User(peer)
+    if p.check():
+        if p.checkfriend(user):
+            data = p.downloadkey()
+            if data:
+                key = data['key']
+            else:
+                key = 'No public key'
+
+            if checklogin(peer):
+                res.append({"status": "online", "key": key})
+                return res
+            else:
+                res.append({"status": "offline", "key": key})
+                return res
+    res.append({"error": "not found or not your friend"})
+    return res
+
+def connect(user, peer):
+    frame = Frame()
+    u = User(user)
+    f = User(peer)
+    if not u.checkfriend(peer) or not checklogin(peer):        
+        u.addlogs(str(datetime.datetime.now()), 'connect error: unknown friend or not online %s at %s' % (peer, request.remote_addr))
+        return json.dumps({"status": 404, 'response' : '%s is not found or not online' % peer})
+    code = random.getrandbits(128)
+    hashcode = hashlib.sha1(str(code)).hexdigest()
+    bindframe = frame.sendbind(hashcode)
+    for p in sv_lsclient.lsclient:
+        if p.name == peer:
+            p.connection.send(bindframe)
+            ph, pp = p.addr          
+            u.addlogs(str(datetime.datetime.now()), 'connecting to %s(%s:%d) at %s' % (peer, ph, pp, request.remote_addr))
+            f.addlogs(str(datetime.datetime.now()), 'connecting from %s(%s) at %s:%s' % (user, request.remote_addr, ph, pp))  
+    return json.dumps({"status": 200, 'hashcode': hashcode})
+def upload(user, key):
+    u = User(user)
+    u.uploadkey(key)
+    u.addlogs(str(datetime.datetime.now()), 'upload public key at %s' % request.remote_addr)
+    return "upload complete"
+
+def addkey(user, peer):
+    u = User(user)
+    p = User(peer)
+    res = []
+    if p.check() and u.checkfriend(peer):
+        key = p.downloadkey()
+        if key is None:
+            res.append({"error": "no key found"})
+            return res
+        u.addlogs(str(datetime.datetime.now()), 'add public key of %s at %s' % (peer, request.remote_addr))
+        res.append({"key": key['key']})
+        return res
+    res.append({"error": "friend not found"})
+    return res
+
+def friends(user):
+    u = User(user)
+    res = []
+    data1, data2 = u.lsfriend()
+    if data1.count() == 0 and data2.count() == 0:
+        res.append({"error": "no friend has found"})
+        return res
+    for f in data1:
+        if checklogin(f["friend"]):
+            res.append({'friend': f["friend"], 'status' : "online"})
+        else:
+            res.append({'friend': f["friend"], 'status' : "offline"})
+    for f in data2:
+        if checklogin(f["user"]):
+            res.append({'friend': f["user"], 'status' : "online"})
+        else:
+            res.append({'friend': f["user"], 'status' : "offline"})
+    return res
+def onlines(user):
+    u = User(user)
+    res = []
+    data1, data2 = u.lsfriend()
+    if data1.count() == 0 and data2.count() == 0:
+        res.append({"error": "no friend has found"})
+        return res
+    for f in data1:
+        if checklogin(f["friend"]):
+            res.append({'friend': f["friend"], 'status' : "online"})
+    for f in data2:
+        if checklogin(f["user"]):
+            res.append({'friend': f["user"], 'status' : "online"})
+    return res
+def logs(user):
+    u = User(user)
+    res = []
+    data = u.logs()   
+    if data.count() == 0:
+        res.append({"error": "no logs has found"})
+        return res
+    for f in data:
+        res.append({'time': f["time"], 'logs' : f["logs"]})
+    return res
+def friendrq(user):
+    u = User(user)
+    data = u.lsfriendrq()
+    res = []
+    if data.count() == 0:
+        res.append({"error": "no friend request has found"})
+        return res
+    for f in data:
+        res.append({'request': f["request"], 'time': f["time"]})
+    return res
+def add_friend(user, peer):
+    u = User(user)
+    p = User(peer)
+    if p.check():
+        if p.checkfriend(user):
+            return "%s is your friend" % peer
+        if p.checkfriendrq(user):       
+            return "you had send request befor"
+        p.addfiendrq(user, str(datetime.datetime.now()))        
+        u.addlogs(str(datetime.datetime.now()), 'make friend: send request to %s at %s' % (peer, request.remote_addr))     
+        return "add friend request has send"
+    return "user you add not found"
+def accept(user, peer):
+    u = User(user)
+    if u.checkfriendrq(peer) and not u.checkfriend(peer):
+        u.addfriend(peer)        
+        u.addlogs(str(datetime.datetime.now()), 'make friend: accept friend request from %s at %s' % (peer, request.remote_addr))     
+        return "you has add friend %s" % peer
+    return "%s is you friend or not have request of this user" % peer
+def denied(user, peer):
+    u = User(user)
+    if u.checkfriendrq(peer):
+        u.rmfriendrq(peer)
+        u.addlogs(str(datetime.datetime.now()), 'make friend: denied request from %s at %s' % (peer, request.remote_addr))     
+        return "request friend of %s have been remove" % peer
+    return "you not have request of this friend"
+def logout(user):
+    for u in sv_lsclient.lsclient:
+        if u.name == user:
+            u.connection.close()
+            sv_lsclient.lsclient.remove(u)
+            return "you has logout"
+    return "you are not login"
+
+@app.route('/get')
+def get():
+	fwd = request.environ.get('HTTP_X_FORWARDED_FOR', None)
+        if fwd is None:
+            return request.environ.get('REMOTE_ADDR')
+        # sometimes x-forwarded-for contains multiple addresses,
+        # actual client is first, rest are proxy
+        fwd = fwd.split(',')[0]
+        return fwd
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.headers['Content-Type'] == 'application/json':
+        return "Welcome!\nGlobal SSH Webservice\n%s" % str(datetime.datetime.now())
+    else:
+        info = None
+        if 'logged_in' in session:
+            if checklogin(session['username']):
+                for u in sv_lsclient.lsclient:
+                    if u.name == session['username']:
+                        info = 'online at %s:%d' % u.addr
+            else:
+                info = 'offline'
+        return render_template('index.html', info = info)
+@app.route('/register', methods=['GET', 'POST'])
+def api_register():
+
+    if request.headers['Content-Type'] == 'application/json':
+        if request.json["username"] and request.json["password"]:
+            return register(request.json["username"], request.json["password"])
+        return "bad request"
+    else:
+        error = None
+        if 'logged_in' in session:
+            return redirect(url_for('index'))
+        if request.method == 'POST':
+            error = register(request.form['username'], hashlib.sha1(request.form['password']).hexdigest())
+        return render_template('register.html', error = error)
+@app.route('/login', methods=['GET', 'POST'])
+@requires_auth
+def api_login():
+    if request.headers['Content-Type'] == 'application/json':            
+        auth = request.authorization
+        user = auth.username
+        pswd = auth.password
+        return login(user, pswd)
+    else:
+        error = None
+        if 'logged_in' in session:
+            return redirect(url_for('index'))
+        if request.method == 'POST':
+            if not check_auth(request.form['username'], hashlib.sha1(request.form['password']).hexdigest()):
+                error = "wrong username or password"
+            else:
+                session['logged_in'] = True
+                session['username'] = request.form['username']
+                return redirect(url_for('index'))
+        return render_template('login.html', error = error)
+
+@app.route('/user/<username>', methods=['GET', 'POST'])
+@requires_auth
+def api_user(username):
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        return json.dumps(user(auth.username, username))
+    else:
+        return render_template('user.html', info = user(session['username'], username), user = username)
+
+@app.route('/connect', methods=['GET', 'POST'])
+@requires_auth
+def api_connect():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        if request.json['peer']:
+            return connect(auth.username, request.json['peer'])
+        else:
+            return "bad request"
+    else:
+        return "connect page"
+
+@app.route('/uploadkey', methods=['GET', 'POST'])
+@requires_auth
+def api_uploadkey():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        if request.json['key']:
+            return upload(auth.username, request.json['key'])
+        else:
+            return "bad request"
+    else:
+        return "uploadkey page"
+
+
+@app.route('/addkey', methods=['GET', 'POST'])
+@requires_auth
+def api_addkey():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        if request.json['peer']:
+            return json.dumps(addkey(auth.username, request.json['peer']))
+    else:
+        return "addkey page"
+
+@app.route('/friends', methods=['GET', 'POST'])
+@requires_auth
+def api_friend():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        return json.dumps(friends(auth.username))
+    else:
+        return render_template('content.html', data = friends(session['username']), page = "friends")
+@app.route('/onlines', methods=['GET', 'POST'])
+@requires_auth
+def api_online():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        print onlines(auth.username)
+        return json.dumps(onlines(auth.username))
+    else:
+        return render_template('content.html', data = onlines(session['username']), page = "onlines")
+@app.route('/logs', methods=['GET', 'POST'])
+@requires_auth
+def api_logs():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        return json.dumps(logs(auth.username))
+    else:
+        
+        return render_template('content.html', data = logs(session['username']), page = "logs")
+@app.route('/friendrq', methods=['GET', 'POST'])
+@requires_auth
+def api_friendrq():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        return json.dumps(friendrq(auth.username))
+    else:
+        return render_template('content.html', data = friendrq(session['username']), page = "friendrq")
+
+@app.route('/add', methods=['GET', 'POST'])
+@requires_auth
+def api_addfriend():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        if request.json["peer"]:
+            return add_friend(auth.username, request.json["peer"])
+        else:
+            return "bad request"
+    else:
+        rs = None
+        if request.method == 'POST' and request.form['peer']:
+            rs = add_friend(session['username'], request.form['peer'])
+            return render_template('addfriend.html', result = rs)
+        return render_template('addfriend.html', result = rs)
+
+@app.route('/accept', methods=['GET', 'POST'])
+@requires_auth
+def api_accept():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        if request.json["peer"]:
+            return accept(auth.username, request.json["peer"])
+        else:
+            return "bad request"
+    else:
+        if request.method == 'POST' and request.form['peer']:
+            accept(session['username'], request.form['peer'])
+            return redirect(url_for('api_friendrq'))
+        return "you must choice peer"
+@app.route('/denied', methods=['GET', 'POST'])
+@requires_auth
+def api_denied():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        if request.json["peer"]:
+            return denied(auth.username, request.json["peer"])
+        else:
+            return "bad request"
+    else:
+        if request.method == 'POST' and request.form['peer']:
+            denied(session['username'], request.form['peer'])
+            return redirect(url_for('api_friendrq'))
+        return "you must choice peer"
+@app.route('/logout', methods=['GET', 'POST'])
+@requires_auth
+def api_logout():
+    if request.headers['Content-Type'] == 'application/json':
+        auth = request.authorization
+        return logout(auth.username)
+    else:
+        session.pop('logged_in', None)
+        session.pop('username', None)
+        flash('logged out')
+        return redirect(url_for('index'))
+@app.route('/about', methods=['GET'])
+def api_about():
+    return render_template('about.html')
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+if __name__ == "__main__":
+	port = int(os.environ.get('PORT', 5000))
+	app.run(host='0.0.0.0', port = port)
