@@ -35,7 +35,11 @@ class Bind(Thread):
 		else:
 			target = self.address
 		self.s.bind(("", self.port + 1))
-		self.s.connect_ex((target, self.port))
+		err = self.s.connect_ex((target, self.port + 1))
+		i = 0
+		while err != 0 and i <10:
+			err = self.s.connect_ex((target, self.port + 1))
+			i +=1
 		print "bind connected to %s:%d" % (target, self.port)
 		#start bind ssh
 		fw_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

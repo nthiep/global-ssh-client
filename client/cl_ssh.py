@@ -29,7 +29,11 @@ class SSH(Thread):
 		else:
 			target = self.address
 		self.s.bind(("", self.port))
-		self.s.connect_ex((target, self.port + 1))
+		err = self.s.connect_ex((target, self.port + 1))
+		i = 0
+		while err != 0 and i <10:
+			err = self.s.connect_ex((target, self.port + 1))
+			i +=1
 		print "ssh connected to %s:%d" % (target, self.port + 1)
 		try:
 			client = paramiko.SSHClient()
