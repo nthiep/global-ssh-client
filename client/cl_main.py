@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+#
+# Name: 		Global SSH Client
+# Description:	help connect ssh between client behind NAT.
+#				ssh use paramiko
+# project 2
+#
+# Author: 		Nguyen Thanh Hiep - Nguyen Huu Dinh
+# Time: 		2014/10
+# Requirements: paramiko, ecdsa, websocket_client
+#
+
 import shlex
 import sys
 import os

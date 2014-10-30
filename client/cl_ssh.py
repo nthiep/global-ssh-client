@@ -1,7 +1,13 @@
+#!/usr/bin/env python
+#
+# Name:			cl_ssh
+# Description:	ssh connection
+#
+
 from threading import Thread
-import sys, socket
+import sys, socket, os
 import getpass
-from paramiko.py3compat import input
+os.sys.path.append('../client')
 import paramiko
 import traceback
 try:
@@ -11,9 +17,10 @@ except ImportError:
 paramiko.util.log_to_file('cl_ssh.log')
 class SSH(Thread):
 	"""docstring for ssh"""
-	def __init__(self, hashcode, me, port, peer, address, localadd):	
+	def __init__(self, hashcode, user, me, port, peer, address, localadd):	
 		super(SSH, self).__init__()
 		self.hashcode = hashcode
+		self.user = user
 		self.me = me
 		self.port = port
 		self.peer = peer
@@ -31,16 +38,25 @@ class SSH(Thread):
 		self.s.bind(("", self.port))
 		err = self.s.connect_ex((target, self.port + 1))
 		i = 0
-		while err != 0 and i <10:
+		while err != 0 and i < 20:
 			err = self.s.connect_ex((target, self.port + 1))
-			i +=1
+			i += 1
+		if err != 0:
+			print "can't connect"
+			sys.exit(1)
 		print "ssh connected to %s:%d" % (target, self.port + 1)
 		try:
 			client = paramiko.SSHClient()
 			client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 			client.load_system_host_keys()
+			key_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
+			try:
+				k = paramiko.RSAKey.from_private_key_file(key_path)
+			except paramiko.PasswordRequiredException:
+				password = getpass.getpass('RSA key password: ')
+				k = paramiko.RSAKey.from_private_key_file(key_path, password)
 			print('*** Connecting... ***')
-			client.connect(target, self.port +1 , sock=self.s)			
+			client.connect(target, self.port +1, username = self.user, pkey = k, sock=self.s)			
 			chan = client.invoke_shell()
 			print('***  Global SSH: ssh connected ***\n')
 			conn = True
@@ -48,8 +64,9 @@ class SSH(Thread):
 				cl_interactive.interactive_shell(chan)
 				conn = False
 			chan.close()
-			client.close()			
-			return False
+			client.close()
+		except paramiko.AuthenticationException:
+			print "ssh authentication public key failed, peer not allow public key."
 		except Exception as e:
 			print('*** Caught exception: %s: %s' % (e.__class__, e))
 			traceback.print_exc()

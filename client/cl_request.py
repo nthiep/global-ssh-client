@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+#
+# Name:			cl_request
+# Description:	process request
+#
+
 import sys, os, hashlib, time, urllib2, json, base64
 from cl_handle import Handle
 import cl_global
@@ -82,13 +88,13 @@ class Request(object):
 				data = json.loads(response.read())
 				if data['status'] == 200:
 					hashcode = data['hashcode']
+					sshuser = data['user']
 					peer = data['peer']
 					me = data['me']
 					port = data['port']
 					address = data['address']
 					localadd = data['localadd']
-					connssh = SSH(hashcode, me, port, peer, address, localadd)
-					print "start ssh"
+					connssh = SSH(hashcode, sshuser, me, port, peer, address, localadd)
 					connssh.start()
 					connssh.join()
 				else:
@@ -103,7 +109,10 @@ class Request(object):
 		if cl_global.user is not None:
 			key_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa.pub')
 			if os.path.exists(key_path):
-				f = open(key_path, 'r')
+				try:					
+					f = open(key_path, 'r')
+				except:
+					print "error: can't open file ~/.ssh/id_rsa.pub"
 				path = "/uploadkey"
 				url = self.host + path
 				jdata = json.dumps({"key": f.read()})
@@ -144,6 +153,8 @@ class Request(object):
 					f.write(key)
 					f.close()
 					print "addkey successful"
+			except IOError:
+				print "error: can't addkey to ~/.ssh/authorized_keys"
 			except urllib2.HTTPError as e:
 				print(e.read())
 			except:

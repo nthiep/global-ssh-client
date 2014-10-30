@@ -1,4 +1,10 @@
-import json, socket
+#!/usr/bin/env python
+#
+# Name:			cl_handle
+# Description:	keep connection to webservice
+#
+
+import json, socket, getpass
 from threading import Thread
 from ConfigParser import SafeConfigParser
 from cl_bind import Bind
@@ -36,7 +42,8 @@ class Handle(Thread):
 		s.close()
 		sock_path = self.sock_host + "/socklogin"
 		ws = create_connection(sock_path)
-		info = json.dumps({"username" : self.username, "password": self.password, "address": self.address, "localadd": localadd})
+		sshuser = getpass.getuser()
+		info = json.dumps({"username" : self.username, "user": sshuser, "password": self.password, "address": self.address, "localadd": localadd})
 		ws.send(info)
 		while True:
 			result =  ws.recv()

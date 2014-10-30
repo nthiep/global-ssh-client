@@ -1,3 +1,16 @@
+#!/usr/bin/env python
+#
+# Name:     Global SSH Webservice
+# Description:  help connect ssh between client via return public ip and ramdom port.
+#               use websocket and HTTP server.
+# project 2
+# Server:   cloud platform heroku
+#
+# Author:   Nguyen Thanh Hiep - Nguyen Huu Dinh
+# Time:     2014/10
+# Requirements:  view requirements.txt
+#
+
 import sys, time, os, datetime, hashlib, random
 from functools import wraps
 from flask import Flask, request, Response, json, render_template, session, redirect, url_for, render_template, flash
@@ -6,15 +19,15 @@ from sv_user import User
 global lsclient
 lsclient = []
 app = Flask(__name__)
-app.secret_key = "1234567890"
+app.secret_key = "global-ssh"
 app.debug = 'DEBUG' in os.environ
 app.config['DEBUG'] = True
-app.config['DEBUG'] = os.environ.get('DEBUG', False)
 sockets = Sockets(app)
 
 class Client(object):
-    def __init__(self, name, addr, localadd, connection):
+    def __init__(self, name, user, addr, localadd, connection):
         self.name = name
+        self.user = user
         self.addr = addr
         self.local = localadd
         self.connection = connection
@@ -99,7 +112,7 @@ def conninfo(user, port, peer, hashcode):
             addp = p.addr
     for u in lsclient:
         if u.name == user:
-            return json.dumps({"status": 200, "hashcode" : hashcode, 'me': addp, 'port': port, "peer" : peer, "address" : u.addr, "localadd" : u.local})
+            return json.dumps({"status": 200, "user": u.user, "hashcode" : hashcode, 'me': addp, 'port': port, "peer" : peer, "address" : u.addr, "localadd" : u.local})
     return None
 
 def connect(user, peer):
@@ -447,7 +460,7 @@ def sock_login(ws):
     message = ws.receive()
     data = json.loads(message)
     if check_auth(data['username'], data['password']):
-        cl = Client(data['username'], data['address'], data['localadd'], ws)
+        cl = Client(data['username'], data['user'], data['address'], data['localadd'], ws)
         lsclient.append(cl)
         print "New connection started for %s" % data['address']
         u = User(data['username'])
