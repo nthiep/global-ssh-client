@@ -5,7 +5,7 @@
 #
 
 from threading import Thread
-import sys, socket, os
+import sys, socket, os, thread, time
 import getpass
 os.sys.path.append('../client')
 import paramiko
@@ -17,34 +17,84 @@ except ImportError:
 paramiko.util.log_to_file('cl_ssh.log')
 class SSH(Thread):
 	"""docstring for ssh"""
-	def __init__(self, hashcode, user, me, port, peer, address, localadd):	
+	def __init__(self, user, lport, laddr, port, addr, me, myport, nat):	
 		super(SSH, self).__init__()
-		self.hashcode = hashcode
 		self.user = user
-		self.me = me
+		self.lport = lport
+		self.laddr = laddr
 		self.port = port
-		self.peer = peer
-		self.address = address
-		self.localadd = localadd
-
-		self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-	def run(self):
-		if self.me == self.address:
-			target = self.localadd
+		self.addr = addr
+		self.me = me
+		self.myport = myport
+		self.nat = nat
+		self.connect = None
+	def listen(self, port):		
+		ls = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		ls.bind(("", port))
+		print "listen on " ,port
+		ls.listen(5)
+		conn, cl = ls.accept()
+		if self.connect is None:
+			self.connect = conn
+			print "accepted connect from ", cl
+	def connecting(self, lport, target, tport, nat):
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		s.bind(("", lport))
+		print "send ", tport
+		err = 1
+		if nat:
+			i = 0
+			s.settimeout(5.0)
+			while err != 0 and i < 10:
+				err = s.connect_ex((target, tport))
+				i += 1
 		else:
-			target = self.address
-		self.s.bind(("", self.port))
-		err = self.s.connect_ex((target, self.port + 1))
-		i = 0
-		while err != 0 and i < 20:
-			err = self.s.connect_ex((target, self.port + 1))
-			i += 1
-		if err != 0:
+			s.settimeout(1.0)
+			err = s.connect_ex((target, tport))
+		if err == 0 and self.connect is None:			
+			s.settimeout(None)
+			self.connect = s			
+			print "connected to %s:%d" % (target, tport)
+	def run(self):
+		connlan = False
+		if self.me == self.addr:
+			target = self.laddr
+			tport = self.lport			
+			t = Thread(target=self.listen, args = (self.myport,))
+			t.daemon = True
+			t.start()
+			check = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			time.sleep(0.5)
+			if check.connect_ex((target, tport)) == 0 and self.connect is None:
+				connlan = True
+				self.connect = check
+				print "connected to %s:%d" % (target, tport)
+		elif not connlan:
+			print "not lan"
+			target = self.addr
+			tport = self.port
+			if self.nat == "None":
+				print "NAT None"
+				self.connecting(self.myport, target, tport, True)
+			elif self.nat == "ASC":
+				print "NAT ASC"
+				i=0
+				while self.connect is None and i<10:
+					self.connecting(self.myport, target, tport, False)
+					tport +=1
+					i +=1
+			else:
+				print "NAT DESC"
+				i=0
+				while self.connect is None and i<10 and tport>0:
+					self.connecting(self.myport, target, tport, False)
+					tport -=1
+					i+=1
+		if self.connect == None:
 			print "can't connect"
 			sys.exit(1)
-		print "ssh connected to %s:%d" % (target, self.port + 1)
 		try:
 			client = paramiko.SSHClient()
 			client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -54,9 +104,17 @@ class SSH(Thread):
 				k = paramiko.RSAKey.from_private_key_file(key_path)
 			except paramiko.PasswordRequiredException:
 				password = getpass.getpass('RSA key password: ')
-				k = paramiko.RSAKey.from_private_key_file(key_path, password)
+				try:					
+					k = paramiko.RSAKey.from_private_key_file(key_path, password)
+				except:
+					print "wrong RSA key password"
+					sys.exit(1)
+			except:
+				print "RSA key Required!"
+				sys.exit(1)
+
 			print('*** Connecting... ***')
-			client.connect(target, self.port +1, username = self.user, pkey = k, sock=self.s)			
+			client.connect(target, tport, username = self.user, pkey = k, sock=self.connect)			
 			chan = client.invoke_shell()
 			print('***  Global SSH: ssh connected ***\n')
 			conn = True

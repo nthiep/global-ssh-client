@@ -1,0 +1,94 @@
+-l hiep -p hiep
+-c koding1
+-w
+-l hiep -p hiep
+-c koding1
+-l hiep -p hiep
+-l koding1 -p hiep
+-c hiep
+-w
+-l
+--help
+-l
+-c 1
+-c 0
+-c 1
+-l
+-c 1
+-c 0
+-c 1
+-l
+-c 0
+-l
+-c hisdo
+-l
+-c 1
+-l
+-c 0
+-l
+-c 0
+-l
+-c 0
+-l
+-c 0
+-c 1
+-l
+-c 1
+-l
+-c 1
+-l
+-c 1
+-l
+-c hi
+-c 1
+-l
+-c 1
+-l
+-c 2
+-l
+-c 1
+-l
+-c 1
+-l
+-c 1
+-l
+-c 1
+-l
+-c 1
+-l
+-c 1
+-l
+-c 1
+-l
+-c 2
+-l
+-c 3
+-l
+-c 1
+-l
+-c 2
+-l
+-c 3
+-cl
+-l
+-c 2
+-l
+-c 2
+-l
+-c 1
+-l
+-c 1
+-g
+-l
+-g
+-k y
+-k 1
+uhk
+ko
+-p
+-h
+-l
+-c 2
+-c 1
+-l
+-c 1

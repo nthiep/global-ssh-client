@@ -4,52 +4,43 @@
 # Description:	keep connection to webservice
 #
 
-import json, socket, getpass
+import os, socket, json
 from threading import Thread
 from ConfigParser import SafeConfigParser
 from cl_bind import Bind
 import cl_global
-from websocket import create_connection
 class Handle(Thread):
-	"""docstring for Handle"""
-	def __init__(self, username, password, address):
+	"""Handle keep conect with server"""
+	def __init__(self, connection):
 		super(Handle, self).__init__()
 		self.daemon = True
-		self.username = username
-		self.password = password
-		self.address = address
-		self.parser = SafeConfigParser()
-		self.parser.read('cl_config.cfg')
-		self.sock_host = "ws://%s:%s" % (self.parser.get('websv', 'server'),self.parser.get('websv', 'port'))
-		
+		self.connection = connection
 	def process(self, data):
-		if data != "ok":
-			info = json.loads(data)
-			if info['status'] == 200:
-				hashcode = info['hashcode']
-				port = info['port']
-				me = info['me']
-				peer = info['peer']
-				address = info['address']
-				localadd = info['localadd']
-				connbind = Bind(hashcode, me, port, peer, address, localadd)
+		print data
+		try:
+			data = json.loads(data)
+		except:
+			return
+		if 'status' in data:
+			if data["status"] == "bind":
+				connbind = Bind(data["session"])
 				connbind.start()
-
+			if data["status"] == "addkey":
+				try:
+					key = data["key"]
+					key_auth = os.path.join(os.environ['HOME'], '.ssh', 'authorized_keys')
+					f = open(key_auth, 'a')
+					f.write(key)
+					f.close()
+					print "addkey successful"
+				except IOError:
+					print "error: can't addkey to ~/.ssh/authorized_keys"
+		else:
+			cl_global.listpeer = data
 	def run(self):
-		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		s.connect(('8.8.8.8',80))
-		localadd = s.getsockname()[0]
-		s.close()
-		sock_path = self.sock_host + "/socklogin"
-		ws = create_connection(sock_path)
-		sshuser = getpass.getuser()
-		info = json.dumps({"username" : self.username, "user": sshuser, "password": self.password, "address": self.address, "localadd": localadd})
-		ws.send(info)
 		while True:
-			result =  ws.recv()
-			if result:
-				self.process(result)
-			else:
+			data = self.connection.recv(1024)
+			if len(data) == 0:
 				break
-		cl_global.auth = None
-		cl_global.user = None
+			self.process(data)
+		self.connection.close()
