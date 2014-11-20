@@ -9,7 +9,7 @@ import pymongo
 from pymongo import Connection
 class Peer():
 	def __init__(self):
-		cn = Connection("mongodb://nthiep:16081992761312nth@linus.mongohq.com:10092/app30915045")
+		cn = Connection("database")
 		self.db = cn.app30915045
 	def login(self, token, mac, lport, port):
 		timestamp = datetime.datetime.now()
