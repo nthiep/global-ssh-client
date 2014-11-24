@@ -37,17 +37,19 @@ class Bind(Thread):
 
 	def listen(self, port):
 		ls = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)	
+		ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 		ls.bind(("", port))
 		print "listen on ", port
 		ls.listen(5)
-		conn, cl = ls.accept()
+		ls, cl = ls.accept()
 		if self.connect is None:
-			self.connect = conn
+			self.connect = ls
 			print "accepted connect from ", cl
 	def connecting(self, lport, target, tport, nat):
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)	
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 		s.bind(("", lport))
 		print "send ", tport
 		err = 1
@@ -77,12 +79,12 @@ class Bind(Thread):
 		print data
 		data = json.loads(data)
 		connlan = False
+		t = Thread(target=self.listen, args = (lport,))
+		t.daemon = True
+		t.start()
 		if data["me"] == data["addr"]:
 			target = data["laddr"]
 			tport = data["lport"]
-			t = Thread(target=self.listen, args = (lport,))
-			t.daemon = True
-			t.start()
 			check = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			time.sleep(0.5)
 			if check.connect_ex((target, tport)) == 0 and self.connect is None:
