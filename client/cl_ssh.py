@@ -30,17 +30,19 @@ class SSH(Thread):
 		self.connect = None
 	def listen(self, port):		
 		ls = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)		
+		ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 		ls.bind(("", port))
 		print "listen on " ,port
 		ls.listen(5)
-		conn, cl = ls.accept()
+		ls, cl = ls.accept()
 		if self.connect is None:
-			self.connect = conn
+			self.connect = ls
 			print "accepted connect from ", cl
 	def connecting(self, lport, target, tport, nat):
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)		
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 		s.bind(("", lport))
 		print "send ", tport
 		err = 1
@@ -59,12 +61,13 @@ class SSH(Thread):
 			print "connected to %s:%d" % (target, tport)
 	def run(self):
 		connlan = False
+
+		t = Thread(target=self.listen, args = (self.myport,))
+		t.daemon = True
+		t.start()
 		if self.me == self.addr:
 			target = self.laddr
-			tport = self.lport			
-			t = Thread(target=self.listen, args = (self.myport,))
-			t.daemon = True
-			t.start()
+			tport = self.lport
 			check = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			time.sleep(0.5)
 			if check.connect_ex((target, tport)) == 0 and self.connect is None:
@@ -100,21 +103,30 @@ class SSH(Thread):
 			client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 			client.load_system_host_keys()
 			key_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
+			passwd = None
 			try:
+				no = set(['no','n'])
 				k = paramiko.RSAKey.from_private_key_file(key_path)
+				choice = raw_input('connect by RSAKey [Yes/no]: ').lower()
+				if choice in no:
+					passwd = getpass.getpass('%s password: ' % target)
 			except paramiko.PasswordRequiredException:
 				password = getpass.getpass('RSA key password: ')
 				try:					
 					k = paramiko.RSAKey.from_private_key_file(key_path, password)
 				except:
-					print "wrong RSA key password"
-					sys.exit(1)
+					print "wrong RSA password Key"	
+					passwd = getpass.getpass('%s password: ' % target)
 			except:
-				print "RSA key Required!"
-				sys.exit(1)
+				print "not have RSAKey"
+				passwd = getpass.getpass('%s password: ' % target)
 
 			print('*** Connecting... ***')
-			client.connect(target, tport, username = self.user, pkey = k, sock=self.connect)			
+			if passwd is not None:
+				client.connect(target, tport, username = self.user, password = passwd, sock=self.connect)
+			else:
+				client.connect(target, tport, username = self.user, pkey = k, sock=self.connect)
+
 			chan = client.invoke_shell()
 			print('***  Global SSH: ssh connected ***\n')
 			conn = True
@@ -124,7 +136,8 @@ class SSH(Thread):
 			chan.close()
 			client.close()
 		except paramiko.AuthenticationException:
-			print "ssh authentication public key failed, peer not allow public key."
+			print "Authentication False"
+			sys.exit(1)
 		except Exception as e:
 			print('*** Caught exception: %s: %s' % (e.__class__, e))
 			traceback.print_exc()
