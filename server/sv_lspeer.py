@@ -4,7 +4,7 @@ lspeer = []
 session = {}
 class lsPeer(object):
 	"""docstring for Peer"""
-	def __init__(self, token, mac, connection):
-		self.token = token
+	def __init__(self, user, mac, connection):
+		self.user = user
 		self.mac = mac
 		self.connection = connection

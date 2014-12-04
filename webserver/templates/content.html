@@ -1,0 +1,112 @@
+{% extends "header.html" %}
+{% block title %} {% print page %} {% endblock %}
+{% block table %}
+<link href="static/bootstrap-table.css" rel="stylesheet" media="screen">
+<script src="static/bootstrap-table.js"></script>
+{% endblock %}
+
+
+{% if page == "machines" %}
+{% set ac = 1 %}
+{% endif %}
+{% if page == "onlines" %}
+{% set ac = 2 %}
+{% endif %}
+{% if page == "logs" %}
+{% set ac = 3 %}
+{% endif %}
+
+{% block info %}
+{% if page == "logs" %}
+show all logs:
+{% endif %}
+{% if page == "machines" %}
+show all machines:
+{% endif %}
+{% if page == "onlines" %}
+show all machines online:
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{% if page == "machines" %}
+
+<div class="row">
+    <div class="col-lg-12">
+        <h2>Machines list</h2>
+        <div class="table-responsive">
+            <table data-toggle="table" class="table table-bordered table-hover">
+	<thead>
+	        <tr>
+	            <th >Host name</th>
+	            <th >MAC address</th>
+	        </tr>
+	    </thead>
+	<tbody>
+	{% for l in data %}
+		<tr><td>
+			{{ l['host'] }}
+		</td><td>
+		<font color = "#292929">
+			{{ l['mac'] }}
+		</font></td></tr>
+		{% endfor %}
+	</tbody>
+</table></div></div></div>
+		{% endif %}
+
+{% if page == "onlines" %}
+<div class="row">
+    <div class="col-lg-12">
+        <h2>Onlines machines</h2>
+        <div class="table-responsive">
+            <table data-toggle="table" class="table table-bordered table-hover">
+	<thead>
+	        <tr>
+	            <th >Host name</th>
+	            <th >MAC Address</th>
+	        </tr>
+	    </thead>
+	<tbody>
+	{% for l in data %}
+	<tr><td>
+		{{ l['host'] }}
+	</a></td><td><font color = "#292929">
+		{{ l['mac'] }}
+	</font></td></tr>
+	{% endfor %}
+	</tbody>
+</table></div></div></div>
+	{% endif %}
+
+{% if page == "logs" %}
+<div class="row">
+    <div class="col-lg-12">
+        <h2>Logs Activities</h2>
+        <div class="table-responsive">
+            <table data-toggle="table" class="table table-bordered table-hover">
+	<thead>
+	        <tr>
+	            <th >Time</th>
+	            <th >MAC</th>
+	            <th >Logs</th>
+	        </tr>
+	</thead>
+	<tbody>
+	{% for l in data %}
+		 <tr><td>
+			{{ l['time'] }}
+		</td>
+		<td>
+			{{ l['mac'] }}
+		</td><td>
+		<font color = "#292929">
+			{{ l['log'] }}
+		</font></td></tr>
+	{% endfor %}
+	</tbody>
+	</table></div></div></div>
+{% endif %}
+
+{% endblock %}

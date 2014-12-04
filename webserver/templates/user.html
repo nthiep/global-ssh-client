@@ -1,0 +1,18 @@
+{% extends "header.html" %}
+{% block title %}
+{{ session["username"] }} @gssh
+{% endblock %}
+
+{% block content %}
+ <div class="row" style="height:100%">
+    <div class="col-lg-12">
+<h1>
+  {{ user }} Profile
+ </h1>
+<h3>Full name: {{ info["user"] }}</h3>
+<h3>Infomation: </h3>
+<textarea class="form-control" rows="8">{{ info["info"] }}</textarea>
+</div>
+</div>
+</div>
+{% endblock %}

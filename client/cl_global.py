@@ -4,6 +4,7 @@
 # Description:	global variable
 #
 
-
+global connect
 global listpeer
+connect = None
 listpeer = []

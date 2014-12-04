@@ -29,10 +29,35 @@ class Bind(Thread):
 				if string:
 					destination.sendall(string)
 				else:
+					print "close bind"
 					source.shutdown(socket.SHUT_RD)
 					destination.shutdown(socket.SHUT_WR)
 			except Exception as e:
-				print "Exception forward", e
+				print "Exception forward bind", e
+				break
+	def udp_tcp(self, udp, target, tcp):
+		data = ' '
+		while data:
+			try:				
+				data, addr = udp.recvfrom(1024)
+				if data:
+					if len(data) > 1:
+						tcp.sendall(data)
+				else:
+					print "close bind"
+					udp.shutdown(socket.SHUT_RD)
+					tcp.shutdown(socket.SHUT_WR)
+			except Exception as e:
+				print "Exception forward udp-tcp", e
+				break
+	def tcp_udp(self, tcp, udp, target):
+		data = ' '
+		while data:
+			try:				
+				data = tcp.recv(1024)
+				udp.sendto(data, target)
+			except Exception as e:
+				print "Exception forward tcp-udp", e
 				break
 
 	def listen(self, port):
@@ -51,7 +76,6 @@ class Bind(Thread):
 		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)	
 		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 		s.bind(("", lport))
-		print "send ", tport
 		err = 1
 		if nat:
 			i = 0
@@ -66,6 +90,15 @@ class Bind(Thread):
 			s.settimeout(None)
 			self.connect = s			
 			print "connected to %s:%d" % (target, tport)
+	def udp_connect(self, udp):
+		udp.sendto(json.dumps({"session": self.session}) ,(self.parser.get('server', 'server'), int(self.parser.get('server', 'port'))))
+		data, addr = udp.recvfrom(1024)
+		print data
+		data = json.loads(data)
+		udp.sendto("1", (data["host"], int(data["port"])))
+		udp.sendto("1", (data["host"], int(data["port"])))
+		print "udp sendto", data["host"],":", data["port"]
+		return int(data["port"])
 	def run(self):
 		sb = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sb.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -79,10 +112,12 @@ class Bind(Thread):
 		print data
 		data = json.loads(data)
 		connlan = False
-		t = Thread(target=self.listen, args = (lport,))
-		t.daemon = True
-		t.start()
+		connudp = False
 		if data["me"] == data["addr"]:
+			print "Connect by LAN Network"			
+			t = Thread(target=self.listen, args = (lport,))
+			t.daemon = True
+			t.start()
 			target = data["laddr"]
 			tport = data["lport"]
 			check = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -92,32 +127,42 @@ class Bind(Thread):
 				self.connect = check
 				print "connected to %s:%d" % (target, tport)
 		elif not connlan:
-			print "not lan"
 			target = data["addr"]
 			tport = data["port"]
-			if data["nat"] == "None":
-				print "NAT None"
-				self.connecting(lport, target, tport, True)
-			elif data["nat"] == "ASC":			    
-				print "NAT ASC"
-				i = 0
-				while self.connect is None and i < 10:
-					self.connecting(lport, target, tport, False)
-					tport +=1
-					i +=1
-			else:
-				print "NAT DESC"
-				i = 0
-				while self.connect is None and i <10:
-					self.connecting(lport, target, tport, False)
-					tport -=1
-					i+=1
-		if self.connect == None:
+			if 1==1 or data["nat"] == "RAD" or data["mynat"] == "RAD" or ((data["nat"] == "ASC" or data["nat"] == "DESC") and (data["mynat"] == "ASC" or data["mynat"] == "DESC")):
+				udp = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
+				udp.bind(("", tport))
+				udp_port = self.udp_connect(udp)
+		 		connudp = True
+			else:				
+				t = Thread(target=self.listen, args = (lport,))
+				t.daemon = True
+				t.start()
+				if data["nat"] == "None":
+					self.connecting(lport, target, tport, True)
+				elif data["nat"] == "ASC":
+					i = 0
+					while self.connect is None and i < 10:
+						self.connecting(lport, target, tport, False)
+						tport +=1
+						i +=1
+				else:
+					i = 0
+					while self.connect is None and i <10:
+						self.connecting(lport, target, tport, False)
+						tport -=1
+						i+=1
+		if self.connect == None and not connudp:
 			print "can't connect"
 			sys.exit(1)
-		print "have connect"
-		#start bind ssh
+		if connudp:
+			self.connect = udp
 		fw_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		fw_socket.connect((self.parser.get('config', 'sshd'), int(self.parser.get('config', 'sshp'))))
-		thread.start_new_thread(self.forward, (self.connect, fw_socket))
-		thread.start_new_thread(self.forward, (fw_socket, self.connect))
+		
+		if connudp:
+			thread.start_new_thread(self.udp_tcp, (self.connect, (target, udp_port), fw_socket))
+			thread.start_new_thread(self.tcp_udp, (fw_socket, self.connect, (target, udp_port)))
+		else:
+			thread.start_new_thread(self.forward, (self.connect, fw_socket))
+			thread.start_new_thread(self.forward, (fw_socket, self.connect))
