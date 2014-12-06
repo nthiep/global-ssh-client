@@ -5,4 +5,4 @@ Description: Global-SSH webservice, application help connect SSH to computer via
 
 Our team: Nguyen Thanh Hiep and Nguyen Huu Dinh
 
-View details at: https://nthiep.github.io/global-ssh/
+View details at: https://gssh.github.io
