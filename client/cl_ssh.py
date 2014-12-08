@@ -68,16 +68,19 @@ class SSH(Thread):
 	def udp_connect(self, udp):
 		udp.sendto(json.dumps({"session": self.session}) ,(self.parser.get('server', 'server'), int(self.parser.get('server', 'port'))))
 		data, addr = udp.recvfrom(1024)
-		print data
+		print data, addr
 		data = json.loads(data)
+		if self.mynat == "RAD":
+			time.sleep(1)
 		udp.sendto(self.session, (data["host"], int(data["port"])))
 		print "udp sendto", data["host"],":", data["port"]
-		data, addr = sockfd.recvfrom( 1024 )
-	    print data, addr
-	    if data == self.session:	    			
-			udp.sendto(self.session, (data["host"], int(data["port"])))
+		recv, addr = udp.recvfrom( 1024 )
+		print recv, addr
+		if recv == self.session:
+			if self.mynat != "RAD":
+				udp.sendto(self.session, addr)
 			print "udp connected"
-		return (data["host"], int(data["port"]))
+		return addr
 	def tcp_udp(self, tcp, udp, target):
 		tcp.listen(5)
 		conn, addr = tcp.accept()
@@ -85,23 +88,23 @@ class SSH(Thread):
 		data = ' '
 		thread.start_new_thread(self.udp_tcp, (udp, target, conn))
 		while data:
-			data = self.conn.recv(1024)
+			data = conn.recv(1024)
 			if data:
 				udp.sendto(data, target)
 			else:
 				print "close tcp-udp"
-				self.conn.shutdown(socket.SHUT_RD)
+				conn.shutdown(socket.SHUT_RD)
 				udp.shutdown(socket.SHUT_WR)
 	def udp_tcp(self, udp, target, tcp):
 		data = ' '
 		while data:
 			data, addr = udp.recvfrom(1024)
 			if data:
-				self.conn.sendall(data)
+				tcp.sendall(data)
 			else:
 				print "close udp_tcp"
 				udp.shutdown(socket.SHUT_RD)
-				self.conn.shutdown(socket.SHUT_WR)
+				tcp.shutdown(socket.SHUT_WR)
 
 	def run(self):
 		connlan = False

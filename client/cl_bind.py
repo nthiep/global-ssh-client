@@ -20,6 +20,7 @@ class Bind(Thread):
 			self.mac = ':'.join(['{:02x}'.format((uuid.getnode() >> i) & 0xff) for i in range(0,8*6,8)][::-1])
 		except:
 			self.mac = str(hex(uuid.getnode()))
+		self.mynat = None
 		self.connect = None
 	def forward(self, source, destination):
 		string = ' '
@@ -95,16 +96,19 @@ class Bind(Thread):
 	def udp_connect(self, udp):
 		udp.sendto(json.dumps({"session": self.session}) ,(self.parser.get('server', 'server'), int(self.parser.get('server', 'port'))))
 		data, addr = udp.recvfrom(1024)
-		print data
+		print data, addr
 		data = json.loads(data)
-		time.sleep(1)
+		if self.mynat == "RAD":
+			time.sleep(1)
 		udp.sendto(self.session, (data["host"], int(data["port"])))
 		print "udp sendto", data["host"],":", data["port"]
-	    data, addr = sockfd.recvfrom( 1024 )
-	    print data, addr
-	    if data == self.session:
+		recv, addr = udp.recvfrom( 1024 )
+		print recv, addr
+		if recv == self.session:
+			if self.mynat != "RAD":
+				udp.sendto(self.session, addr)
 			print "udp connected"
-		return int(data["port"])
+		return addr
 	def run(self):
 		sb = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sb.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -115,8 +119,8 @@ class Bind(Thread):
 		"token": self.parser.get('config', 'token'), "lport": lport, "laddr": laddr, "mymac": self.mac}))
 		data = sb.recv(1024)
 		sb.close()
-		print data
 		data = json.loads(data)
+		self.mynat = data["mynat"]
 		connlan = False
 		connudp = False
 		if data["me"] == data["addr"]:
@@ -138,7 +142,7 @@ class Bind(Thread):
 			if 1==1 or data["nat"] == "RAD" or data["mynat"] == "RAD" or ((data["nat"] == "ASC" or data["nat"] == "DESC") and (data["mynat"] == "ASC" or data["mynat"] == "DESC")):
 				udp = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 				udp.bind(("", tport))
-				udp_port = self.udp_connect(udp)
+				udp_target = self.udp_connect(udp)
 		 		connudp = True
 			else:				
 				t = Thread(target=self.listen, args = (lport,))
@@ -167,8 +171,8 @@ class Bind(Thread):
 		fw_socket.connect((self.parser.get('config', 'sshd'), int(self.parser.get('config', 'sshp'))))
 		
 		if connudp:
-			thread.start_new_thread(self.udp_tcp, (self.connect, (target, udp_port), fw_socket))
-			thread.start_new_thread(self.tcp_udp, (fw_socket, self.connect, (target, udp_port)))
+			thread.start_new_thread(self.udp_tcp, (self.connect, udp_target, fw_socket))
+			thread.start_new_thread(self.tcp_udp, (fw_socket, self.connect, udp_target))
 		else:
 			thread.start_new_thread(self.forward, (self.connect, fw_socket))
 			thread.start_new_thread(self.forward, (fw_socket, self.connect))
