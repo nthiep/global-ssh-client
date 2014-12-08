@@ -9,7 +9,7 @@ import pymongo
 from pymongo import Connection
 class User():
 	def __init__(self):
-		cn = Connection("database")
+		cn = Connection("linkdata")
 		self.db = cn.app30915045
 
 	def user(self, username):

@@ -4,12 +4,15 @@
 # Description:	database
 #
 
-import os, datetime
 import pymongo
+import os, datetime
 from pymongo import Connection
+from ConfigParser import SafeConfigParser
 class Peer():
 	def __init__(self):
-		cn = Connection("database")
+		parser = SafeConfigParser()
+		parser.read('sv_config.conf')
+		cn = Connection(parser.get('server', 'data'))
 		self.db = cn.app30915045
 
 	def check_token(self, mac, token):

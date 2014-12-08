@@ -16,8 +16,7 @@ from functools import wraps
 from flask import Flask, request, Response, json, render_template, session, redirect, url_for, render_template, flash
 from sv_user import User
 app = Flask(__name__)
-app.secret_key = "global-ssh"
-app.debug = 'DEBUG' in os.environ
+app.config['SECRET_KEY'] = "global-ssh-6173b812b1d07e2306f37246d49d147ea601305b"
 app.config['DEBUG'] = True
 u = User()
 def request_json():
@@ -188,16 +187,11 @@ def api_logout():
         return redirect(url_for('index'))
 @app.route('/about', methods=['GET'])
 def api_about():
-    return render_template('about.html')
+    return redirect("https://gssh.github.io", code=302)
 
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
 
-if __name__ == "__main__":
-    port = 8080
-    try:
-        port = int(sys.argv[1])
-    except (IndexError, ValueError):
-        pass
-    app.run("", port)
+if __name__ == '__main__':
+    app.run("",5000)

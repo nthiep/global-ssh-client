@@ -57,6 +57,7 @@ def posix_shell(chan):
                     sys.stdout.write(x)
                     sys.stdout.flush()
                 except socket.timeout:
+                    print "timeout"
                     pass
             if sys.stdin in r:
                 x = sys.stdin.read(1)

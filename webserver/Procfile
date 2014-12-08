@@ -1,2 +1,1 @@
-#web: python sv_webservice.py
-web: gunicorn -k flask_sockets.worker sv_webservice:app
+web: gunicorn sv_webservice:app -b 0.0.0.0:$PORT

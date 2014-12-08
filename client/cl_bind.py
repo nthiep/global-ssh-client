@@ -43,6 +43,8 @@ class Bind(Thread):
 				if data:
 					if len(data) > 1:
 						tcp.sendall(data)
+					else:
+						print data
 				else:
 					print "close bind"
 					udp.shutdown(socket.SHUT_RD)
@@ -95,9 +97,13 @@ class Bind(Thread):
 		data, addr = udp.recvfrom(1024)
 		print data
 		data = json.loads(data)
-		udp.sendto("1", (data["host"], int(data["port"])))
-		udp.sendto("1", (data["host"], int(data["port"])))
+		time.sleep(1)
+		udp.sendto(self.session, (data["host"], int(data["port"])))
 		print "udp sendto", data["host"],":", data["port"]
+	    data, addr = sockfd.recvfrom( 1024 )
+	    print data, addr
+	    if data == self.session:
+			print "udp connected"
 		return int(data["port"])
 	def run(self):
 		sb = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

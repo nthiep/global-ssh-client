@@ -70,42 +70,39 @@ class SSH(Thread):
 		data, addr = udp.recvfrom(1024)
 		print data
 		data = json.loads(data)
-		udp.sendto("1", (data["host"], int(data["port"])))		
-		udp.sendto("1", (data["host"], int(data["port"])))
+		udp.sendto(self.session, (data["host"], int(data["port"])))
 		print "udp sendto", data["host"],":", data["port"]
-		return int(data["port"])
+		data, addr = sockfd.recvfrom( 1024 )
+	    print data, addr
+	    if data == self.session:	    			
+			udp.sendto(self.session, (data["host"], int(data["port"])))
+			print "udp connected"
+		return (data["host"], int(data["port"]))
 	def tcp_udp(self, tcp, udp, target):
 		tcp.listen(5)
-		self.conn, addr = tcp.accept()
+		conn, addr = tcp.accept()
 		print "accept connected", addr
 		data = ' '
+		thread.start_new_thread(self.udp_tcp, (udp, target, conn))
 		while data:
-			try:				
-				data = self.conn.recv(1024)
-				if data:
-					udp.sendto(data, target)
-				else:
-					self.conn.shutdown(socket.SHUT_RD)
-					udp.shutdown(socket.SHUT_WR)
-			except Exception as e:
-				print "Exception forward tcp-udp", e
-				break
-		tcp.close()
+			data = self.conn.recv(1024)
+			if data:
+				udp.sendto(data, target)
+			else:
+				print "close tcp-udp"
+				self.conn.shutdown(socket.SHUT_RD)
+				udp.shutdown(socket.SHUT_WR)
 	def udp_tcp(self, udp, target, tcp):
 		data = ' '
 		while data:
-			try:				
-				data, addr = udp.recvfrom(1024)
-				if data:
-					if len(data) > 1:
-						self.conn.sendall(data)
-				else:
-					print "close ssh"
-					udp.shutdown(socket.SHUT_RD)
-					self.conn.shutdown(socket.SHUT_WR)
-			except Exception as e:
-				print "Exception forward udp-tcp", e
-				break
+			data, addr = udp.recvfrom(1024)
+			if data:
+				self.conn.sendall(data)
+			else:
+				print "close udp_tcp"
+				udp.shutdown(socket.SHUT_RD)
+				self.conn.shutdown(socket.SHUT_WR)
+
 	def run(self):
 		connlan = False
 		connudp = False
@@ -126,9 +123,9 @@ class SSH(Thread):
 			target = self.addr
 			tport = self.port
 			if 1==1 or self.nat == "RAD" or self.mynat == "RAD" or ((self.nat == "ASC" or self.nat == "DESC") and (self.mynat == "ASC" or self.mynat == "DESC")):
-				udp = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
+				udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 				udp.bind(("", tport))
-				udp_port = self.udp_connect(udp)
+				udp_target = self.udp_connect(udp)
 				connudp = True
 			else:				
 				t = Thread(target=self.listen, args = (self.myport,))
@@ -158,12 +155,7 @@ class SSH(Thread):
 			fw_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			fw_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			fw_socket.bind(("", tport))
-			thread.start_new_thread(self.tcp_udp, (fw_socket, udp, (peeradd, udp_port)))
-			time.sleep(0.5)
-			self.connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.connect.connect((target, tport))
-			thread.start_new_thread(self.udp_tcp, (udp, (peeradd, udp_port), self.conn))
-			time.sleep(0.5)
+			thread.start_new_thread(self.tcp_udp, (fw_socket, udp, udp_target))
 			
 		try:
 			client = paramiko.SSHClient()
@@ -171,10 +163,11 @@ class SSH(Thread):
 			client.load_system_host_keys()
 			key_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
 			passwd = None
+			k = None
 			try:
-				k = paramiko.RSAKey.from_private_key_file(key_path)
 				if self.parser.get('config', 'passconnect') == "yes":
-					passwd = getpass.getpass('%s password: ' % peeradd)
+					raise
+				k = paramiko.RSAKey.from_private_key_file(key_path)
 			except paramiko.PasswordRequiredException:
 				password = getpass.getpass('RSA key password: ')
 				try:					
@@ -183,14 +176,10 @@ class SSH(Thread):
 					print "wrong RSA password Key"	
 					passwd = getpass.getpass('%s password: ' % peeradd)
 			except:
-				print "not have RSAKey"
 				passwd = getpass.getpass('%s password: ' % peeradd)
 
 			print('*** Connecting... ***')
-			if passwd is not None:
-				client.connect(target, tport, username = self.user, password = passwd, sock=self.connect)
-			else:
-				client.connect(target, tport, username = self.user, pkey = k, sock=self.connect)
+			client.connect(target, tport, username = self.user, password = passwd, pkey = k, sock=self.connect)
 
 			chan = client.invoke_shell()
 			print('***  Global SSH: ssh connected ***\n')
@@ -198,6 +187,7 @@ class SSH(Thread):
 			while conn:
 				cl_interactive.interactive_shell(chan)
 				conn = False
+			print "interactive_shell break"
 			chan.close()
 			client.close()
 		except paramiko.AuthenticationException:
