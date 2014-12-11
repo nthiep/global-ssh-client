@@ -125,7 +125,7 @@ class SSH(Thread):
 		elif not connlan:
 			target = self.addr
 			tport = self.port
-			if 1==1 or self.nat == "RAD" or self.mynat == "RAD" or ((self.nat == "ASC" or self.nat == "DESC") and (self.mynat == "ASC" or self.mynat == "DESC")):
+			if self.nat == "RAD" or self.mynat == "RAD" or ((self.nat == "ASC" or self.nat == "DESC") and (self.mynat == "ASC" or self.mynat == "DESC")):
 				udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 				udp.bind(("", tport))
 				udp_target = self.udp_connect(udp)
