@@ -139,7 +139,7 @@ class Bind(Thread):
 		elif not connlan:
 			target = data["addr"]
 			tport = data["port"]
-			if 1==1 or data["nat"] == "RAD" or data["mynat"] == "RAD" or ((data["nat"] == "ASC" or data["nat"] == "DESC") and (data["mynat"] == "ASC" or data["mynat"] == "DESC")):
+			if data["nat"] == "RAD" or data["mynat"] == "RAD" or ((data["nat"] == "ASC" or data["nat"] == "DESC") and (data["mynat"] == "ASC" or data["mynat"] == "DESC")):
 				udp = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
 				udp.bind(("", tport))
 				udp_target = self.udp_connect(udp)
