@@ -16,7 +16,8 @@ class JsonSocket(object):
 		self._port = port
 	def set_reuseaddr(self):
 		self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
+	def get_conn(self):
+		return self.socket
 
 	def connect(self):
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -28,6 +29,9 @@ class JsonSocket(object):
 				continue
 			return True
 		return False
+
+	def bind(self, port):
+		self.socket.bind( ("", port) )
 	def send_obj(self, obj):
 		msg = json.dumps(obj)
 		if self.socket:

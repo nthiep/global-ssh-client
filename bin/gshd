@@ -1,156 +1,101 @@
-#! /bin/sh
-### BEGIN INIT INFO
-# Provides:          Hiep
-# Required-Start:    $remote_fs $syslog
-# Required-Stop:     $remote_fs $syslog
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: global ssh initscript
-# Description:       service file
-### END INIT INFO
-
-# Author: Hiep Thanh Nguyen <hieptux@gmail.com>
+#!/usr/bin/env python
+#
+# Name:			handle
+# Description:	keep connection to webservice
 #
 
-# PATH should only include /usr/* if it runs after the mountnfs.sh script
-PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="global ssh deamon service"
-NAME=gshd
-DAEMON=/usr/local/bin/gssh
-DAEMON_ARGS=""
-PIDFILE=/var/run/$NAME.pid
-SCRIPTNAME=/etc/init.d/$NAME
-VERBOSE=yes
-# Exit if the package is not installed
-[ -x "$DAEMON" ] || exit 0
+import sys, os, time, thread, socket, json, uuid, crypt, getpass, spwd
+import logging.handlers, logging
+from threading import Thread
+from gsh import Server
+from gsh import Request
+from gsh.config import *
+# Deafults
+LOG_LEVEL = logging.INFO  # Could be e.g. "DEBUG" or "WARNING"
 
-# Read configuration variable file if it is present
-[ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
-# Load the VERBOSE setting and other rcS variables
-#. /lib/init/vars.sh
+# Make a class we can use to capture stdout and sterr in the log
+class MyLogger(object):
+	def __init__(self, logger, level):
+		"""Needs a logger and a logger level."""
+		self.logger = logger
+		self.level = level
+ 
+	def write(self, message):
+		# Only log if there is a message (not just a new line)
+		if message.rstrip() != "":
+			self.logger.log(self.level, message.rstrip())
+ 
 
-# Define LSB log_* functions.
-# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
-# and status_of_proc is working.
-. /lib/lsb/init-functions
+class Handle():
+	"""Handle keep conect with server"""
+	def __init__(self):
+		self.request = Request()
+		self.connection = None
+	def reconnect(self):
+		i = 1
+		while not self.connection and i <= 5:
+			print "reconnect to server..."
+			time.sleep(2 * i)
+			self.connection = self.request.keepconnect()
+			i +=1
+		if i >5:
+			return False
+		return True
+		
+	def process(self, data):
+		if 'response' in data:
+			if data["response"] == "FIN":
+				print "logout..."
+				return False
+			if data["response"] == "bind":
+				connbind = Server(data["session"])
+				connbind.start()
+		return True
+	def ping_server(self, sec):
+		while True:
+			try:
+				time.sleep(sec)
+				self.connection.send_obj({"request": "ping"})
+			except:
+				if not self.reconnect():
+					os._exit(1)
 
-#
-# Function that starts the daemon/service
-#
-do_start()
-{
-	# Return
-	#   0 if daemon has been started
-	#   1 if daemon was already running
-	#   2 if daemon could not be started
+	def run(self):
+		self.connection = self.request.keepconnect()
+		if not self.connection:
+			if not self.reconnect():
+				os._exit(1)
+		self.request.authuser()
+		self.request.authnetwork()
+		self.request.checknat()
+		thread.start_new_thread(self.ping_server, (25,))
+		while True:
+			data = self.connection.read_obj()
+			self.process(data)
+		self.connection.close()
+		os._exit(1)
 
-	start-stop-daemon --start --background --quiet --make-pidfile --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
-		|| return 1
-	start-stop-daemon --start --background --quiet --make-pidfile --pidfile $PIDFILE --exec $DAEMON -- \
-		$DAEMON_ARGS \
-		|| return 2
-	# Add code here, if necessary, that waits for the process to be ready
-	# to handle requests from services started subsequently which depend
-	# on this one.  As a last resort, sleep for some time.
-}
+if __name__ == "__main__":
+	"""
+	logger = logging.getLogger(__name__)
+	# Set the log level to LOG_LEVEL
+	logger.setLevel(LOG_LEVEL)
+	# Make a handler that writes to a file, making a new file at midnight and keeping 3 backups
+	handler = logging.handlers.TimedRotatingFileHandler(LOG_FILENAME, when="midnight", backupCount=3)
+	# Format each log message like this
+	formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+	# Attach the formatter to the handler
+	handler.setFormatter(formatter)
+	# Attach the handler to the logger
+	logger.addHandler(handler)
 
-#
-# Function that stops the daemon/service
-#
-do_stop()
-{
-	# Return
-	#   0 if daemon has been stopped
-	#   1 if daemon was already stopped
-	#   2 if daemon could not be stopped
-	#   other if a failure occurred
-	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
-	RETVAL="$?"
-	[ "$RETVAL" = 2 ] && return 2
-	# Wait for children to finish too if this is a daemon that forks
-	# and if the daemon is only ever run from this initscript.
-	# If the above conditions are not satisfied then add some other code
-	# that waits for the process to drop all resources that could be
-	# needed by services started subsequently.  A last resort is to
-	# sleep for some time.
-	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
-	[ "$?" = 2 ] && return 2
-	# Many daemons don't delete their pidfiles when they exit.
-	rm -f $PIDFILE
-	return "$RETVAL"
-}
+		# Replace stdout with logging to file at INFO level
+	sys.stdout = MyLogger(logger, logging.INFO)
+	# Replace stderr with logging to file at ERROR level
+	sys.stderr = MyLogger(logger, logging.ERROR)
+	"""
 
-#
-# Function that sends a SIGHUP to the daemon/service
-#
-do_reload() {
-	#
-	# If the daemon can reload its configuration without
-	# restarting (for example, when it is sent a SIGHUP),
-	# then implement that here.
-	#
-	start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
-	return 0
-}
-
-case "$1" in
-  start)
-	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME" || true
-	do_start
-	case "$?" in
-		0) [ "$VERBOSE" != no ] && log_end_msg 0 || true;;
-		1) [ "$VERBOSE" != no ] && log_daemon_msg "$DESC" "$NAME already running" || true;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 || true;;
-	esac
-	;;
-  stop)
-	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME" || true
-	do_stop
-	case "$?" in
-		0) [ "$VERBOSE" != no ] && log_end_msg 0 || true;;
-		1) [ "$VERBOSE" != no ] && log_end_msg 0 || true;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 || true;;
-	esac
-	;;
-  status)
-	status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
-	;;
-  #reload|force-reload)
-	#
-	# If do_reload() is not implemented then leave this commented out
-	# and leave 'force-reload' as an alias for 'restart'.
-	#
-	#log_daemon_msg "Reloading $DESC" "$NAME"
-	#do_reload
-	#log_end_msg $?
-	#;;
-  restart|force-reload)
-	#
-	# If the "reload" option is implemented then remove the
-	# 'force-reload' alias
-	#
-	log_daemon_msg "Restarting $DESC" "$NAME" || true
-	do_stop
-	case "$?" in
-	  0|1)
-		do_start
-		case "$?" in
-			0) log_end_msg 0 || true;;
-			1) log_end_msg 1 || true;; # Old process is still running
-			*) log_end_msg 1 || true;; # Failed to start
-		esac
-		;;
-	  *)
-		# Failed to stop
-		log_end_msg 1 || true
-		;;
-	esac
-	;;
-  *)
-	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
-	exit 3
-	;;
-esac
-
-:
+ 
+	exe = Handle()
+	exe.run()

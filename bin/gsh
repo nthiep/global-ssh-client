@@ -10,55 +10,49 @@
 # Requirements: paramiko, ecdsa
 #
 
-import shlex
 import sys
 import os
-import time
-import readline
 from optparse import OptionParser
 from optparse import OptionGroup
 import getpass
 from gsh import Request
 request = Request()
 def Main():
-	parser = OptionParser(description='global-ssh help connect ssh to peer behind NAT',
-                                   prog='global-ssh',
-                                   version='global-ssh 1.2',
-                                   usage='%prog [-h] or [--help] to view help\n\t[-q] to quit program')
-	group = OptionGroup(parser, "register, login account")
+	parser = OptionParser(description='global ssh help connect ssh behind NAT',
+                                   prog='gsh',
+                                   version='1.1.2',
+                                   usage='%prog [user@][hostname-mac] [options]')
+	group = OptionGroup(parser, "account")
 	group.add_option("-s", "--login", action ='store_true', default=False,
         help="login to server")
 	group.add_option("-r", "--register", action ='store_true', default=False, 
 		help="register new account")
 	parser.add_option_group(group)
 
-	group = OptionGroup(parser, "connect to peer")	#create group of parser
+	group = OptionGroup(parser, "connect")	#create group of parser
 	group.add_option("-c", "--connect", metavar="p",
-        help="-c [hostname] connect to peer") # add option parser
+        help="-c [user@]hostname or mac") # add option parser
 	group.add_option("-n", "--net", metavar="p",
-        help="-n [net name] add network")
+        help="-n [netname] add network")
 	parser.add_option_group(group)
 
-	group = OptionGroup(parser, "show infomation of peer")
+	group = OptionGroup(parser, "infomation")
 	group.add_option("-l", "--list", action ='store_true', default=False,
         help="show peer online")
 	group.add_option("-g", "--logs", action ='store_true', default=False,
         help="show logs")
 	parser.add_option_group(group)
 
-	parser.add_option("-q", "--quiet",
-	 action="store_true", default=False, help="exit program")
-
 	options, args = parser.parse_args()
 	processparser(options)
 def superuser():
 	if os.geteuid() != 0:
-		print "You must a root to run this action!"
 		args = ['sudo', sys.executable] + sys.argv + [os.environ]
 		# the next line replaces the currently-running process with the sudo
 		os.execlpe('sudo', *args)
 
 def processparser(options):
+
 	if options.register:
 		user = raw_input("username: ")		
 		pswd = getpass.getpass('Password for %s: ' % user)			
@@ -68,6 +62,7 @@ def processparser(options):
 			return
 		if not request.register(user, pswd):
 			os._exit(1)
+		return
 
 	if options.login:
 		superuser()
@@ -75,17 +70,22 @@ def processparser(options):
 		pswd = getpass.getpass('Password for %s:' % user)
 		if not request.login(user, pswd):
 			print "login False"
-			return
+		return
 	if options.connect is not None:		
 		request.connect(options.connect)
+		return
 	if options.net is not None:
 		request.addnetwork(options.net)
+		return
 	if options.list:
 		request.listmachine()
+		return
 	if options.logs:
 		request.logs()
-	if options.quiet:
-		print "\nquitting...."
-		os._exit(1)
-
-Main()
+		return
+	if len(sys.argv) == 1:
+		request.listmachine()
+	if len(sys.argv) == 2:
+		request.connect(sys.argv[1])
+if __name__ == "__main__":
+	Main()
