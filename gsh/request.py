@@ -21,9 +21,11 @@ class Request(object):
 			data = ({"request": "keepconnect", "mac": MAC_ADDR,
 			 "hostname": connect.gethostname(),"platform": PLATFORM})
 			connect.send_obj(data)
+			logging.debug("keepconnect: had send request")
 			data = connect.read_obj()
-			print data
+			logging.debug("keepconnect: recv %s" %str(data))
 			return connect
+		logging.debug('keepconnect: can not connect')
 		return False
 	def register(self, user, passwork, fullname ="", email="", website=""):
 		connect = JsonSocket(SERVER, PORT)
@@ -31,8 +33,10 @@ class Request(object):
 			pswd = hashlib.md5(passwork).hexdigest()
 			data = ({"request": "register", "username": user, "passwork": pswd, "fullname": fullname, "email": email, "website": website})
 			connect.send_obj(data)
+			logging.debug("register: had send request")
 			data = connect.read_obj()
 			connect.close()
+			logging.debug("register: recv %s" %str(data))
 			return True
 		return False
 
@@ -56,7 +60,7 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			print data
+			logging.debug("login: recv %s" %str(data))
 			if data["response"]:		
 				self.save_token(data["token"])
 				return self.authuser()
@@ -75,7 +79,7 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			print data
+			logging.debug("authuser: recv %s" %str(data))
 			return True
 		return False
 	def authnetwork(self):						
@@ -96,7 +100,7 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			print data
+			logging.debug("authnetwork: recv %s" %str(data))
 			return True
 		return False
 
@@ -109,7 +113,7 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			print data["response"]
+			logging.debug("createnetwork: recv %s" %str(data))
 			fname = NET_DIR + netname + "_"+ data["response"][:24] + ".net"
 			f = open(fname, 'w')
 			f.write(data["response"])
@@ -166,6 +170,8 @@ class Request(object):
 			data = ({"request": "renetwork", "mac": MAC_ADDR,"netkey": key})
 			connect.send_obj(data)
 			data = connect.read_obj()
+			connect.close()
+			logging.debug("renetwork: recv %s" %str(data))
 			return True
 		return False
 
@@ -179,6 +185,7 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
+			logging.debug("listmachine: recv data")
 			self.out.listmachine(data)
 			return True
 		return False
@@ -209,8 +216,8 @@ class Request(object):
 				 "apikey": apikey, "peer": peer, "macpeer": macpeer, "laddr": laddr, "lport": lport })
 			connect.send_obj(data)
 			data = connect.read_obj()
-			print data
 			connect.close()
+			logging.debug("connect: recv %s" %str(data))
 			if data["response"]:
 				if data["choice"]:
 					macpeer = self.out.connect(data)

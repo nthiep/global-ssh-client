@@ -1,21 +1,33 @@
 #!/usr/bin/env python
 #
-# Name:			Configuration file
-# Description:	Configuration file
+# Name:			Configuration module
+# Description:	Configuration module file
 #
 
-import os, uuid, platform
+import os, uuid, platform, logging
 from ConfigParser import ConfigParser
+
 # change config file if you move to another place 
 CONFIG_FILE = "/etc/gsh/gsh.conf"
-
-# Configuration variable
+LOG_FILENAME= "/var/log/gshs.log"
 parser = ConfigParser()
 parser.read(CONFIG_FILE)
+# enable or disable debug model
+DEBUG 	= False
+dg 		= parser.get('config', 'debug')
+if dg.lower() == 'true':
+	DEBUG = True
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+# check if not debug mode
+if not DEBUG:
+	logging.disable(level=logging.DEBUG)
+
+# Configuration variable
 # get mac address
-_node = "%12X" %uuid.getnode()
-_node = _node.replace(" ", "0")
-_mac = ':'.join([''.join(i) for i in map(None, *(_node[::2], _node[1::2]))])
+_node 		= "%12X" %uuid.getnode()
+_node 		= _node.replace(" ", "0")
+_mac 		= ':'.join([''.join(i) for i in map(None, *(_node[::2], _node[1::2]))])
 
 info		= platform.linux_distribution()
 PLATFORM 	= " ".join(info)

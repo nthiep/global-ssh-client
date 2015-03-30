@@ -4,8 +4,9 @@
 # Description:	create connect to ssh Server
 #
 
-from threading import Thread
-from gsh import Connection
+from threading 	import Thread
+from gsh 		import Connection
+from gsh.config import logging
 
 class Server(Thread):
 	"""docstring for Server """
@@ -23,6 +24,6 @@ class Server(Thread):
 		port 		= int(data["port"])
 		work 		= data["work"]
 		if self.connection.get_connect_server(exaddr, addr, port, work, myport):
-			print "connection success"
+			logging.debug("Server: connection success")
 			return
-		print "connection false"
+		logging.debug("Server: connection false")

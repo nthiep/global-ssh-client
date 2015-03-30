@@ -7,6 +7,7 @@
 	Thank author!
 """
 import socket, json, struct, time
+from gsh.config import logging
 
 class JsonSocket(object):
 	def __init__(self, address, port):
@@ -21,13 +22,15 @@ class JsonSocket(object):
 
 	def connect(self):
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		for i in range(10):
-			try:
-				self.socket.connect( (self._address, self._port) )
-			except socket.error as msg:
-				time.sleep(3)
-				continue
+		try:
+			self.socket.connect( (self._address, self._port) )
+			logging.debug("socket: connected to server")
 			return True
+		except socket.error as msg:
+			logging.debug("socket: %s" %msg)
+			logging.debug("socket: can not connect to server")
+			return False
+		logging.debug("socket: can not connect to server")
 		return False
 
 	def bind(self, port):
