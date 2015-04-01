@@ -239,10 +239,11 @@ class Request(object):
 		if lport:
 			connect.bind(lport)
 		if connect.connect():
-			laddr, lport = connect.getsockname()
-			data = ({"request": "checknat", "mac": MAC_ADDR,
-				"laddr": laddr, "lport": lport })
-			connect.send_obj(data)
+			if not lport:
+				laddr, lport = connect.getsockname()
+				data = ({"request": "checknat", "mac": MAC_ADDR,
+					"laddr": laddr, "lport": lport })
+				connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
 			return data, lport
@@ -253,7 +254,8 @@ class Request(object):
 		data, lport = self.checknat_conn(PORT)
 		if data:
 			while data["check"]:
-				data = self.checknat_conn(data["port"], lport)
+				data = self.checknat_conn(int(data["port"]), lport)
+				logging.debug("checknat: checknat")
 			return True
 		return False
 		

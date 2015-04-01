@@ -41,7 +41,7 @@ class Connection(object):
 					source.shutdown(socket.SHUT_RD)
 					destination.shutdown(socket.SHUT_WR)
 			except Exception as e:
-				logging.debug("tcp_forward: disconnect")
+				logging.debug("tcp_forward: disconnect %s" %str(e))
 				break
 
 	def udp_tcp_forward(self, udp, target, tcp):
@@ -75,6 +75,7 @@ class Connection(object):
 
 	def accept_local(self, port):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.bind(("", port))
 		sock.settimeout(2.0)
 		sock.listen(5)
@@ -128,9 +129,9 @@ class Connection(object):
 			logging.debug("listen_udp: got connection from %s:%d" %addr)
 			thread.start_new_thread(self.udp_tcp_forward, (udpsock, target, conn))
 			thread.start_new_thread(self.tcp_udp_forward, (conn, udpsock, target))
-		except:
-			pass
-
+			return True
+		except Exception, e:			
+			logging.debug("listen_udp: got error %s" %str(e))
 		logging.debug("listen_udp: not connection")
 		return False
 	def listen_tcp(self, lssock, connsock):
@@ -237,12 +238,12 @@ class Connection(object):
 		logging.debug("udp_hole_connect: send udp to server %d" %port)
 		peer, addr = udp.recvfrom(1024)		
 		peer = json.loads(peer)
-		logging.debug("udp_hole_connect: recv %s" %str(peer["host"]+":"+peer["port"]))
+		logging.debug("udp_hole_connect: recv %s:%s" %(peer["host"], peer["port"]))
 
 		udp.sendto(self.session, (peer["host"], int(peer["port"])))
 		logging.debug("udp_hole_connect: udp sendto peer")
 		recv, addr = udp.recvfrom( 1024 )
-		logging.debug("udp_hole_connect: recvfrom peer %s, %s:%d" %(recv, addr))
+		logging.debug("udp_hole_connect: recvfrom peer %s:%d" %(addr))
 		if recv == self.session:
 			udp.sendto(self.session, addr)
 			logging.debug("udp_hole_connect: got connection")
@@ -365,7 +366,7 @@ class Connection(object):
 		# a and b connect UDP hole punching
 		if _work == _uhole:
 			logging.debug("connect_process: udp hole punching connect")
-			sock, target = self.udp_hole_connect(myport, _addr, _port)
+			sock, target = self.udp_hole_connect()
 			if sock:
 				logging.debug("connect_process: got connection")
 				return sock, target

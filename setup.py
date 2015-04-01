@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-import os, sys
+import os, sys, platform
 from distutils.core import setup
-
+init = ['etc/init.d/gshd']
+if platform.linux_distribution()[0].lower() == 'centos':
+      init = ['etc/init.d/gshd-centos']
 setup(name        ='gsh',
       version     ='1.0.1',
       description ='global ssh',
@@ -12,10 +14,12 @@ setup(name        ='gsh',
       packages    =['gsh'],
       license     = 'GNU',
       scripts     =['bin/gsh', 'bin/gshd'],
-      data_files  =[('/etc/init.d', ['etc/init.d/gshd']),
+      data_files  =[('/etc/init.d', init),
                   ('/etc/gsh', ['etc/gsh/gsh.conf'])]
      )
 if sys.argv[1] == 'install':
+      if platform.linux_distribution()[0].lower() == 'centos':
+            os.system('mv /etc/init.d/gshd-centos /etc/init.d/gshd')
       print "chmod for gsh ..."
       os.system("chmod +x /etc/init.d/gshd")
       print "chmod success.----ok"

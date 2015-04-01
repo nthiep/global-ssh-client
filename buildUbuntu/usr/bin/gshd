@@ -52,11 +52,10 @@ class Handle():
 				connbind.start()
 		return True
 	def ping_server(self, sec):
-		request = {"request": "ping"}
 		while True:
 			try:
 				time.sleep(sec)
-				self.connection.send_obj(request)
+				self.connection.send_obj({"request": "ping"})
 			except:
 				if not self.reconnect():
 					os._exit(1)

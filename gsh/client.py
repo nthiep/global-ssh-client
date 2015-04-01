@@ -34,13 +34,13 @@ class Client():
 			if exaddr == addr:
 			# connect direct local network
 
-				logging.debug("client: connect to %s@%s" %(self.user, laddr))
+				logging.debug("client: connect to %s%s" %(self.user, laddr))
 				os.system("ssh %s%s" % (self.user, laddr))
 				return
 			os.system("ssh %s%s" % (self.user, addr))
-			logging.debug("client: connect to %s@%s" %(self.user, addr))
+			logging.debug("client: connect to %s%s" %(self.user, addr))
 			return
-		logging.debug("client: connect to %s@localhost:%d" %(self.user, port))
+		logging.debug("client: connect to %slocalhost:%d" %(self.user, port))
 		os.system("ssh %s%s -p %d" % (self.user, "localhost", port))
 		#
 		#------------------------------------------------------------------------

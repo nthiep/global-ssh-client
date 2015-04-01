@@ -1,0 +1,10 @@
+Package: gsh
+Version: 1.1.3
+Architecture: all
+Maintainer: hiep<hiep>
+Installed-Size: 2
+Depends: python-appindicator
+Section: extras
+Priority: optional
+Homepage: gssh.github.io
+Description: connect to global ssh
