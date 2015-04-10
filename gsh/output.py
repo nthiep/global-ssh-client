@@ -21,7 +21,7 @@ class Output(object):
 			for m in data["machine"]:
 				print template.format(m["hostname"], m["mac"], m["platform"])
 		else:
-			print "* RESULT: not machine found"
+			print "* RESULT: no machine found"
 	def connect(self, data):
 		if not data:
 			print "* RESULT: hostname not found"

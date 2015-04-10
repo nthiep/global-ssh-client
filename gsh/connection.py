@@ -6,6 +6,7 @@
 
 import sys, thread, socket, json, getpass, uuid, time, struct
 from ConfigParser import SafeConfigParser
+from select import select
 from gsh import JsonSocket
 from gsh.config import *
 
@@ -16,8 +17,8 @@ class Connection(object):
 		
 	def get_accept_connect(self):
 		""" request connection to peer """
-		connect = JsonSocket(SERVER, PORT)
-		if not connect.connect():
+		connect = JsonSocket(JsonSocket.TCP)
+		if not connect.connect(SERVER, PORT):
 			return False
 		laddr, lport = connect.getsockname()
 		data = {"request": "accept_connect", "session": self.session,
@@ -45,12 +46,13 @@ class Connection(object):
 				break
 
 	def udp_tcp_forward(self, udp, target, tcp):
-		data = ' '
-		
+		data = ' '		
 		while data:
 			try:				
 				data, addr = udp.recvfrom(1024)
 				if data:
+					if data == self.session:
+						continue
 					if len(data) > 1:
 						tcp.sendall(data)
 					else:
@@ -219,8 +221,8 @@ class Connection(object):
 		return False
 
 	def udp_hole_connect(self):
-		connect = JsonSocket(SERVER, PORT)
-		if not connect.connect():
+		connect = JsonSocket(JsonSocket.TCP)
+		if not connect.connect(SERVER, PORT):
 			return False
 
 		send_obj = ({"request": "udp_hole", "session": self.session})
@@ -242,19 +244,25 @@ class Connection(object):
 
 		udp.sendto(self.session, (peer["host"], int(peer["port"])))
 		logging.debug("udp_hole_connect: udp sendto peer")
-		recv, addr = udp.recvfrom( 1024 )
-		logging.debug("udp_hole_connect: recvfrom peer %s:%d" %(addr))
-		if recv == self.session:
-			udp.sendto(self.session, addr)
-			logging.debug("udp_hole_connect: got connection")
-			return udp, addr
+		addr = (peer["host"], int(peer["port"]))
+		while True:
+			read,_,_ = select( [0, udp], [], [] )
+			if 0 in read:
+				udp.sendto(self.session, addr )
+			elif udp in read:
+				data, addr = udp.recvfrom( 1024 )
+				logging.debug("udp_hole_connect: recvfrom peer %s:%d" %(addr))
+				if data == self.session:
+					udp.sendto(self.session, addr)
+					logging.debug("udp_hole_connect: got connection")
+					return udp, addr
 		logging.debug("udp_hole_connect: can not connect")
 		return False, False
 	def relay_connect(self):
 		""" connect to relay server """
 		# get request connect to relay server
-		connect = JsonSocket(SERVER, PORT)
-		if connect.connect():
+		connect = JsonSocket(JsonSocket.TCP)
+		if connect.connect(SERVER, PORT):
 			send_obj = ({"request": "relay", "session": self.session})
 			connect.send_obj(send_obj)
 			logging.debug("relay_connect: send request to server")

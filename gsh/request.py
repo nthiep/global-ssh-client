@@ -16,8 +16,8 @@ class Request(object):
 		self.out = Output()
 
 	def keepconnect(self):
-		connect = JsonSocket(SERVER, PORT)
-		if connect.connect():
+		connect = JsonSocket(JsonSocket.TCP)
+		if connect.connect(SERVER, PORT):
 			data = ({"request": "keepconnect", "mac": MAC_ADDR,
 			 "hostname": connect.gethostname(),"platform": PLATFORM})
 			connect.send_obj(data)
@@ -28,8 +28,8 @@ class Request(object):
 		logging.debug('keepconnect: can not connect')
 		return False
 	def register(self, user, passwork, fullname ="", email="", website=""):
-		connect = JsonSocket(SERVER, PORT)
-		if connect.connect():
+		connect = JsonSocket(JsonSocket.TCP)
+		if connect.connect(SERVER, PORT):
 			pswd = hashlib.md5(passwork).hexdigest()
 			data = ({"request": "register", "username": user, "passwork": pswd, "fullname": fullname, "email": email, "website": website})
 			connect.send_obj(data)
@@ -53,8 +53,8 @@ class Request(object):
 		except:
 			return False
 	def login(self, user, passwork):
-		connect = JsonSocket(SERVER, PORT)
-		if connect.connect():
+		connect = JsonSocket(JsonSocket.TCP)
+		if connect.connect(SERVER, PORT):
 			pswd = hashlib.md5(passwork).hexdigest()
 			data = ({"request": "login", "username": user, "passwork": pswd, "mac": MAC_ADDR})
 			connect.send_obj(data)
@@ -70,11 +70,11 @@ class Request(object):
 	def authuser(self):						
 		""" login server by apikey """
 
-		connect = JsonSocket(SERVER, PORT)
+		connect = JsonSocket(JsonSocket.TCP)
 		apikey = self.get_token()
 		if not apikey:
 			return False
-		if connect.connect():
+		if connect.connect(SERVER, PORT):
 			data = ({"request": "authuser", "apikey": apikey, "mac": MAC_ADDR})
 			connect.send_obj(data)
 			data = connect.read_obj()
@@ -85,11 +85,11 @@ class Request(object):
 	def authnetwork(self):						
 		""" authnetwork network """
 
-		connect = JsonSocket(SERVER, PORT)
+		connect = JsonSocket(JsonSocket.TCP)
 		net = glob.glob(NET_DIR + "*.net")
 		if not net:
 			return False
-		if connect.connect():
+		if connect.connect(SERVER, PORT):
 			key = []
 			for  n in net:
 				f = open(n, 'r')
@@ -107,8 +107,8 @@ class Request(object):
 	def createnetwork(self, netname=""):						
 		""" add network """
 		
-		connect = JsonSocket(SERVER, PORT)
-		if connect.connect():
+		connect = JsonSocket(JsonSocket.TCP)
+		if connect.connect(SERVER, PORT):
 			data = ({"request": "createnetwork", "netname": netname})
 			connect.send_obj(data)
 			data = connect.read_obj()
@@ -160,27 +160,29 @@ class Request(object):
 		for n in lsre:
 			print os.path.basename(n)
 		if self.query_yn('do you want remove? [y/n] '):
-			key = []
-			for  n in lsre:
-				f = open(n, 'r')
-				k = f.read()
-				key.append(k)
-				f.close()
-				os.remove(n)
-			data = ({"request": "renetwork", "mac": MAC_ADDR,"netkey": key})
-			connect.send_obj(data)
-			data = connect.read_obj()
-			connect.close()
-			logging.debug("renetwork: recv %s" %str(data))
-			return True
+			connect = JsonSocket(JsonSocket.TCP)
+			if connect.connect(SERVER, PORT):
+				key = []
+				for  n in lsre:
+					f = open(n, 'r')
+					k = f.read()
+					key.append(k)
+					f.close()
+					os.remove(n)
+				data = ({"request": "renetwork", "mac": MAC_ADDR,"netkey": key})
+				connect.send_obj(data)
+				data = connect.read_obj()
+				connect.close()
+				logging.debug("renetwork: recv %s" %str(data))
+				return True
 		return False
 
 
 	def listmachine(self):						
 		""" get list machines """
-		connect = JsonSocket(SERVER, PORT)
+		connect = JsonSocket(JsonSocket.TCP)
 		apikey = self.get_token()
-		if connect.connect():
+		if connect.connect(SERVER, PORT):
 			data = ({"request": "listmachine", "mac": MAC_ADDR, "apikey": apikey})
 			connect.send_obj(data)
 			data = connect.read_obj()
@@ -201,9 +203,9 @@ class Request(object):
 		return False
 
 	def connect(self, peer):
-		connect = JsonSocket(SERVER, PORT)
+		connect = JsonSocket(JsonSocket.TCP)
 		apikey = self.get_token()
-		if connect.connect():
+		if connect.connect(SERVER, PORT):
 			q = self._check_isuser(peer)
 			macpeer = False
 			user 	= False
@@ -232,13 +234,16 @@ class Request(object):
 			self.out.connect(False)
 		return False
 
-	def checknat_conn(self, port, lport=False):
+	def checknat_conn(self, port, lport=False, udp = False):
 		""" check nat connection to the server """
-		connect = JsonSocket(SERVER, port)
+		if udp:
+			connect = JsonSocket(JsonSocket.UDP)
+		else:
+			connect = JsonSocket(JsonSocket.TCP)
 		connect.set_reuseaddr()
 		if lport:
 			connect.bind(lport)
-		if connect.connect():
+		if connect.connect(SERVER, port):
 			if not lport:
 				laddr, lport = connect.getsockname()
 				data = ({"request": "checknat", "mac": MAC_ADDR,
@@ -254,8 +259,12 @@ class Request(object):
 		data, lport = self.checknat_conn(PORT)
 		if data:
 			while data["check"]:
-				data = self.checknat_conn(int(data["port"]), lport)
+				if data["isudp"]:
+					data = self.checknat_conn(int(data["port"], lport, True))
+				else:
+					data = self.checknat_conn(int(data["port"]), lport)
 				logging.debug("checknat: checknat")
+			logging.debug("checknat: checknat success")
 			return True
 		return False
 		
