@@ -10,17 +10,15 @@
 # Requirements: paramiko, ecdsa
 #
 
-import sys
-import os
-from optparse import OptionParser
-from optparse import OptionGroup
-import getpass
-from gsh import Request
+import os, sys, getpass
+from optparse 	import OptionParser
+from optparse 	import OptionGroup
+from gsh 		import Request, __version__
 request = Request()
 def Main():
 	parser = OptionParser(description='global ssh help connect ssh behind NAT',
                                    prog='gsh',
-                                   version='1.1.2',
+                                   version=__version__,
                                    usage='%prog [user@][hostname-mac] [options]')
 	group = OptionGroup(parser, "account")
 	group.add_option("-s", "--login", action ='store_true', default=False,

@@ -7,11 +7,10 @@
 	Thank author!
 """
 import socket, json, struct, time, pickle
-from gsh.lib.Crypto.Hash import MD5
-from gsh.lib.Crypto.PublicKey import RSA
-from gsh.lib.Crypto.Util import randpool
-from gsh.lib.Crypto.Cipher import AES
-from gsh.lib.Crypto import Random
+from Crypto.PublicKey import RSA
+from Crypto.Util import randpool
+from Crypto.Cipher import AES
+from Crypto import Random
 from gsh.config import logging
 
 class Secure(object):
@@ -88,7 +87,7 @@ class JsonSocket(object):
 
 	def bind(self, port):
 		self.socket.bind( ("", port) )
-	def send_obj(self, obj):
+	def send_obj(self, obj, peer=False):
 		msg = json.dumps(obj)
 		msg = self.secure.encrypt(msg)
 		if self.socket:
@@ -96,7 +95,10 @@ class JsonSocket(object):
 				self.socket.send(msg)
 				return True
 			elif(self.peer):
-				self.socket.sendto(self.peer, msg)
+				if peer:
+					self.socket.sendto(peer, msg)
+				else:
+					self.socket.sendto(self.peer, msg)
 				return True
 		return False
 	def gethostname(self):

@@ -234,11 +234,12 @@ class Connection(object):
 		# stating udp hole punching
 
 		logging.debug("udp_hole_connect: stating connection")
-		udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		req = json.dumps({"session": self.session})
-		udp.sendto( req, (SERVER, int(port)))		
+		udp = JsonSocket(JsonSocket.UDP)
+		req = {"session": self.session}
+		udp.connect(SERVER, port)
+		udp.send_obj( req )		
 		logging.debug("udp_hole_connect: send udp to server %d" %port)
-		peer, addr = udp.recvfrom(1024)		
+		peer = udp.read_obj()		
 		peer = json.loads(peer)
 		logging.debug("udp_hole_connect: recv %s:%s" %(peer["host"], peer["port"]))
 
