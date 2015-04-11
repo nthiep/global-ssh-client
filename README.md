@@ -8,7 +8,7 @@ How use Global-SSH:
 connect to machine:
 <!-- highlight:-d language:console -->
 	$gsh [user@]hostname
-
+	hostname can use MAC address
 show machines:
 <!-- highlight:-d language:console -->
 	$ gsh [-l]
@@ -42,4 +42,4 @@ About project
 This project will build a application tool to connect linux computer behind NAT use hole punching and multi hole punching for symmetric NAT.
 Our team: Nguyen Thanh Hiep and Nguyen Huu Dinh
 
-###View details at: https://gssh.github.io
+####View details at: https://gssh.github.io
