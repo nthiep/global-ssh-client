@@ -15,6 +15,9 @@ class Request(object):
 	def __init__(self):
 		self.out = Output()
 
+	def setverbose(self):
+		""" set enable verbose mode """
+		logging.disabled = False
 	def keepconnect(self):
 		connect = JsonSocket(JsonSocket.TCP)
 		if connect.connect(SERVER, PORT):
@@ -86,7 +89,7 @@ class Request(object):
 		""" authnetwork network """
 
 		connect = JsonSocket(JsonSocket.TCP)
-		net = glob.glob(NET_DIR + "*.net")
+		net = glob.glob(os.path.join(NET_DIR, "*.net"))
 		if not net:
 			return False
 		if connect.connect(SERVER, PORT):
@@ -201,21 +204,40 @@ class Request(object):
 		if len(q) == 2:
 			return q
 		return False
+	def _check_division(self, host):
+		q = isuser.strip().split(":")
+		if len(q) == 2:
+			return q[0], q[1]
+		if len(q) == 7:
+			return host.strip()[:17], q[7]
+		return False, False
 
-	def connect(self, peer):
+	def connect(self, peer, options, args):
 		connect = JsonSocket(JsonSocket.TCP)
 		apikey = self.get_token()
 		if connect.connect(SERVER, PORT):
+			sport = False
+			if options.port:
+				sport = options.port
 			q = self._check_isuser(peer)
 			macpeer = False
 			user 	= False
+			sfile 	= False
 			if q:
 				user, peer = q
+			q, = self._check_division(peer)
+			if q:
+				peer, s = self._check_division(peer)
+				if s.isdigit():
+					sport = int(s)
+				else:
+					if options.service == "scp":
+						sfile = s
 			if self._check_ismac(peer):
 				macpeer = peer	
 			laddr, lport = connect.getsockname()
-			data = ({"request": "connect", "mac": MAC_ADDR,
-				 "apikey": apikey, "peer": peer, "macpeer": macpeer, "laddr": laddr, "lport": lport })
+			data = ({"request": "connect", "mac": MAC_ADDR, "apikey": apikey,
+			 "peer": peer, "macpeer": macpeer, "laddr": laddr, "lport": lport, "sport": sport })
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
@@ -226,9 +248,9 @@ class Request(object):
 					if macpeer:
 						if user:
 							macpeer = user + "@" + macpeer
-						return self.connect(macpeer)
+						return self.connect(macpeer, port)
 					return False
-				client = Client(data, laddr, lport, user)
+				client = Client(data, laddr, lport, user, options, args, sfile)
 				client.run()
 				return True
 			self.out.connect(False)
@@ -271,7 +293,4 @@ class Request(object):
 	def logs(self):
 		pass
 	def logout(self):
-		if cl_global.connect is not None:
-			cl_global.connect.send(json.dumps({"request": "logout"}))
-			cl_global.connect = None
-			self.cookie = None
+		pass

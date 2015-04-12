@@ -23,7 +23,8 @@ class Server(Thread):
 		addr 		= data["addr"]
 		port 		= int(data["port"])
 		work 		= data["work"]
-		if self.connection.get_connect_server(exaddr, addr, port, work, myport):
+		sport 		= data["sport"]
+		if self.connection.get_connect_server(exaddr, addr, port, work, myport, sport):
 			logging.debug("Server: connection success")
 			return
 		logging.debug("Server: connection false")

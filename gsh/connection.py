@@ -13,8 +13,8 @@ from gsh.config import *
 class Connection(object):
 	"""docstring for Connection"""
 	def __init__(self, session):
-		self.session = session
-		
+		self.session	= session
+		self.sport 		= 22
 	def get_accept_connect(self):
 		""" request connection to peer """
 		connect = JsonSocket(JsonSocket.TCP)
@@ -303,11 +303,11 @@ class Connection(object):
 		# a connect direct to b
 		# if port 22 on b not working, connect via _port
 		if _work == _direct:
-			sock = self.connect_direct(_addr, 22)
+			sock = self.connect_direct(_addr, s)
 			logging.debug("connect_process: direct to %s port 22" %_addr)
 			if sock:				
 				logging.debug("connect_process: connected")
-				return 22
+				return self.sport
 			# if ssh port is not allow, then use peer port
 			logging.debug("connect_process: not connect port 22")
 			sock = self.connect_direct(_addr, _port)			
@@ -320,7 +320,7 @@ class Connection(object):
 			return False
 
 		# a listening on port when a on the internet
-		# b listenning on port when port 22 not working
+		# b listenning on port when ssh port not working
 		if _work == _listen or _work == _lssv:
 
 			logging.debug("connect_process: listenning my port %d" %myport)
@@ -386,8 +386,10 @@ class Connection(object):
 		logging.debug("connect_process: request relay connect")
 		return False
 
-	def get_connect_client(self, exaddr, addr, port, laddr, lport, work, myport):
+	def get_connect_client(self, exaddr, addr, port, laddr, lport, work, myport, sport):
 		""" get port connected of client side """
+		if sport:
+			self.sport = int(sport)
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.bind(("", 0))
 		a, p = sock.getsockname()
@@ -399,13 +401,13 @@ class Connection(object):
 			conn = self.connect_local(laddr, lport)
 			if conn:
 				logging.debug("connect_client: got connect local")
-				conndr = self.connect_direct(laddr, 22)
+				conndr = self.connect_direct(laddr, self.sport)
 				if conndr:					
 					logging.debug("connect_client: got connect local direct")
 					conn.send('F')
 					conndr.close()
 					sock.close()
-					return 22
+					return self.sport
 
 				logging.debug("connect_client: got connect local via port")
 				conn.send('T')
@@ -427,9 +429,9 @@ class Connection(object):
 		if conn:
 			logging.debug("connect_client: got connection")
 			# connect direct to port 22
-			if conn == 22:
+			if conn == self.sport:
 				sock.close()
-				return 22
+				return self.sport
 			# udp hole punching
 			if work == "UHO":
 				logging.debug("connect_client: connection udp")
@@ -455,12 +457,16 @@ class Connection(object):
 		# if server had down or peer had disconnect
 		# connect false
 		return False
-	def get_connect_server(self, exaddr, addr, port, work, myport):
+	def get_connect_server(self, exaddr, addr, port, work, myport, sport):
 		""" get port connected of client side """
 		## get connection to ssh server
-		sock = self.connect_direct(SSH_SERVER, SSH_PORT)
+		if not sport:
+			sport = SSH_PORT
+		sport = int(sport)
+		sock = self.connect_direct(SSH_SERVER, sport)
+
 		if not sock:
-			logging.debug("connect_server: can not connect ssh server %d" %SSH_PORT)
+			logging.debug("connect_server: can not connect ssh server %d" %sport)
 			return False
 		## connect if same nat
 		if exaddr == addr:			

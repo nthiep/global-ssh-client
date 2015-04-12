@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import os, sys, platform
+from gsh.config import *
 from setuptools import setup
 # Version info -- read without importing
 _locals = {}
-with open('gsh/_version.py') as fp:
+with open(os.path.join("gsh", "_version.py")) as fp:
     exec(fp.read(), None, _locals)
 version = _locals['__version__']
 # setup init file
@@ -28,19 +29,22 @@ setup(name        ='gsh',
                   ('/etc/gsh', ['etc/gsh/gsh.conf'])]
      )
 if sys.argv[1] == 'install':
-      if platform.linux_distribution()[0].lower() == 'centos':
-            os.system('mv /etc/init.d/gshd-centos /etc/init.d/gshd')
-      print "chmod for gsh ..."
-      os.system("chmod +x /etc/init.d/gshd")
-      print "chmod success.----ok"
-      print "chmod for gsh.conf ..."
-      os.system("chmod +r /etc/gsh/gsh.conf")
-      print "chmod success.----ok"
-"""
-      print "create run level rc.d ..."
-      for x in range(2,5):
-            os.system("ln -s /etc/init.d/gshd /etc/rc%d.d/S99gshd" %x)
-      for x in [0,1,6]:
-            os.system("ln -s /etc/init.d/gshd /etc/rc%d.d/K20gshd" %x)
-      print "create success.----ok"
-"""
+      if windows:
+            pass
+      else:
+            if platform.linux_distribution()[0].lower() == 'centos':
+                  os.system('mv /etc/init.d/gshd-centos /etc/init.d/gshd')
+            print "chmod for gsh ..."
+            os.system("chmod +x /etc/init.d/gshd")
+            print "chmod success.----ok"
+            print "chmod for gsh.conf ..."
+            os.system("chmod +r /etc/gsh/gsh.conf")
+            print "chmod success.----ok"
+      """
+            print "create run level rc.d ..."
+            for x in range(2,5):
+                  os.system("ln -s /etc/init.d/gshd /etc/rc%d.d/S99gshd" %x)
+            for x in [0,1,6]:
+                  os.system("ln -s /etc/init.d/gshd /etc/rc%d.d/K20gshd" %x)
+            print "create success.----ok"
+      """

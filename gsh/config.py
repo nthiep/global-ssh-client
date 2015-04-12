@@ -7,9 +7,18 @@
 import os, uuid, platform, logging
 from ConfigParser import ConfigParser
 
-# change config file if you move to another place 
-CONFIG_FILE = "/etc/gsh/gsh.conf"
-LOG_FILENAME= "/var/log/gshs.log"
+windows = True if platform.system() == "Windows" else False
+# change config file if you move to another place
+root 		= os.path.abspath(os.sep)
+if windows:
+	CONFIG_FILE = os.path.join(root, "gsh", "gsh.conf")
+	LOG_FILENAME= os.path.join(root, "log", "gshs.log")
+	PLATFORM 	= platform.system() + platform.release()
+else:
+	CONFIG_FILE = os.path.join(root, "etc", "gsh", "gsh.conf")
+	LOG_FILENAME= os.path.join(root, "var", "log", "gshs.log")
+	info		= platform.linux_distribution()
+	PLATFORM 	= " ".join(info)
 parser = ConfigParser()
 parser.read(CONFIG_FILE)
 # enable or disable debug model
@@ -20,21 +29,19 @@ if dg.lower() == 'true':
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 # check if not debug mode
+logging = logging.getLogger()
 if not DEBUG:
-	logging.disable(level=logging.DEBUG)
-
+	logging.disabled = True
 # Configuration variable
 # get mac address
 _node 		= "%12X" %uuid.getnode()
 _node 		= _node.replace(" ", "0")
 _mac 		= ':'.join([''.join(i) for i in map(None, *(_node[::2], _node[1::2]))])
 
-info		= platform.linux_distribution()
-PLATFORM 	= " ".join(info)
 MAC_ADDR 	= _mac
 GSH_DIR 	= parser.get('config', 'gsh_dir')
+NET_DIR		= os.path.join(GSH_DIR, "net")
 KEY_FILE 	= os.path.join(GSH_DIR, "gsh.key")
-NET_DIR		= os.path.join(GSH_DIR, "net/")
 
 # connect server
 SERVER 		= "172.16.8.1"
