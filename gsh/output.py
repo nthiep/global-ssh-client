@@ -13,7 +13,24 @@ class Output(object):
 			print "* RESULT: registered successfully!"
 		else:
 			print "* RESULT: registered is failed!"
-
+	def authuser(self, data):
+		if data["response"]:
+			print "* RESULT: login successfully!"
+		else:
+			print "* RESULT: login is failed!"
+	def addnetwork(self, data):
+		if data:
+			print "* RESULT: add network successfully!"
+		else:
+			print "* RESULT: add network is failed!"
+	def renetwork(self, data, remove=False):
+		if data:
+			if remove:
+				print "* RESULT: remove network successfully!"
+				return
+			print "* RESULT: network will be remove:"
+		else:
+			print "* RESULT: not network found!"
 	def listmachine(self, data):
 		if data["response"]:
 			template = "{0:25}{1:20}{2:30}"
@@ -38,3 +55,13 @@ class Output(object):
 				return data["machine"][host-1]["mac"]
 			else:
 				return False
+	def logout(self, data):
+		if not data:
+			print "* RESULT: you are not login!"
+			return
+		if data["response"]:
+			print "* RESULT: logout successful!"
+			return
+		print "* RESULT: logout failed!"
+		return
+

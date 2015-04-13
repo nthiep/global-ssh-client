@@ -39,7 +39,8 @@ class Request(object):
 			logging.debug("register: had send request")
 			data = connect.read_obj()
 			connect.close()
-			logging.debug("register: recv %s" %str(data))
+			self.out.register(data)
+			logging.debug("register: recv response")
 			return True
 		return False
 
@@ -47,6 +48,12 @@ class Request(object):
 		f = open(KEY_FILE, 'w')
 		f.write(token)
 		f.close()
+	def del_token(self):
+		try:
+			os.remove(KEY_FILE)
+			return True
+		except:
+			return False
 	def get_token(self):
 		try:
 			f = open(KEY_FILE, 'r')
@@ -82,7 +89,8 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			logging.debug("authuser: recv %s" %str(data))
+			self.out.authuser(data)
+			logging.debug("authuser: recv response")
 			return True
 		return False
 	def authnetwork(self):						
@@ -99,16 +107,16 @@ class Request(object):
 				k = f.read()
 				key.append(k)
 				f.close()
-			data = ({"request": "authnetwork", "mac": MAC_ADDR,"netkey": key})
+			data = ({"request": "authnetwork", "mac": MAC_ADDR, "netkey": key})
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			logging.debug("authnetwork: recv %s" %str(data))
+			logging.debug("authnetwork: recv response")
 			return True
 		return False
 
 	def createnetwork(self, netname=""):						
-		""" add network """
+		""" create network """
 		
 		connect = JsonSocket(JsonSocket.TCP)
 		if connect.connect(SERVER, PORT):
@@ -117,12 +125,48 @@ class Request(object):
 			data = connect.read_obj()
 			connect.close()
 			logging.debug("createnetwork: recv %s" %str(data))
-			fname = NET_DIR + netname + "_"+ data["response"][:24] + ".net"
+			if netname:
+				netname += "_"
+			fname = NET_DIR + netname + data["response"][:24] + ".net"
 			f = open(fname, 'w')
 			f.write(data["response"])
 			f.close()
 			return True
 		return False
+
+	def check_file(self, path):
+		try:
+			open(path, 'r')
+			data = f.read()
+			f.close()
+			return data
+		except:
+			pass
+		return False
+	def addnetwork(self, network):
+		""" add network """
+		key = self.check_file(network)
+		connect = JsonSocket(JsonSocket.TCP)
+		if not key:
+			key = network
+		if connect.connect(SERVER, PORT):
+			data = ({"request": "addnetwork", "mac": MAC_ADDR, "netkey": key})
+			connect.send_obj(data)
+			data = connect.read_obj()
+			connect.close()
+			logging.debug("addnetwork: recv response")
+			if data["response"]:
+				fname = NET_DIR + data["netname"] + "_"+ key[:24] + ".net"
+				f = open(fname, 'w')
+				f.write(key)
+				f.close()
+				logging.debug("addnetwork: add key file")
+				self.out.addnetwork(True)
+
+				return self.authnetwork()
+			self.out.addnetwork(False)
+		return False
+
 
 	def query_yn(question, default="yes"):
 		"""
@@ -153,13 +197,14 @@ class Request(object):
 		""" remove network """
 		net = glob.glob(NET_DIR + "*.net")
 		lsre = []
-		for  n in net:
+		for n in net:
 			if network in n:
 				lsre.append(n)
 		if len(lsre) == 0:
-			print "not network to remove"
+			self.out.renetwork(False)
 			return False
-		print "net work will be remove:"
+		self.out.renetwork(True)
+
 		for n in lsre:
 			print os.path.basename(n)
 		if self.query_yn('do you want remove? [y/n] '):
@@ -172,11 +217,12 @@ class Request(object):
 					key.append(k)
 					f.close()
 					os.remove(n)
-				data = ({"request": "renetwork", "mac": MAC_ADDR,"netkey": key})
+				data = ({"request": "renetwork", "mac": MAC_ADDR, "netkey": key})
 				connect.send_obj(data)
 				data = connect.read_obj()
 				connect.close()
-				logging.debug("renetwork: recv %s" %str(data))
+				logging.debug("renetwork: recv response")
+				self.out.renetwork(True, True)
 				return True
 		return False
 
@@ -293,4 +339,24 @@ class Request(object):
 	def logs(self):
 		pass
 	def logout(self):
-		pass
+		""" logout server use apikey """
+
+		connect = JsonSocket(JsonSocket.TCP)
+		apikey = self.get_token()
+		if not apikey:			
+			self.out.logout(False)
+			return False
+		if connect.connect(SERVER, PORT):
+			data = ({"request": "logout", "apikey": apikey, "mac": MAC_ADDR})
+			connect.send_obj(data)
+			data = connect.read_obj()
+			connect.close()
+			if data["response"]:
+				if self.del_token():
+					logging.debug("logout: delete key file success!")
+				else:
+					logging.debug("logout: can not delete key!")			
+			self.out.logout(data)
+			logging.debug("logout: Done!")
+			return True
+		return False
