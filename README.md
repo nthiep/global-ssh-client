@@ -9,6 +9,17 @@ connect to machine:
 <!-- highlight:-d language:console -->
 	$gsh [user@]hostname
 	hostname can use MAC address
+option:
+<!-- highlight:-d language:console -->
+	--connect=HOSTNAME  -c [user@]hostname or mac
+    -s *, --service=*   [user@]hostname -s service_command
+    -p *, --port=*      [user@]hostname -p port
+    -c *, --command=*   [user@]hostname -C command
+    -i *, --identity=*  [user@]hostname -i identity_file
+    -v, --verbose       [user@]hostname -v debugging mode
+    --cnet=*            [netname] create network
+    -n *, --net=*       -n [netname] add network
+    -r *, --rnet=*      -r [netname] remove network
 show machines:
 <!-- highlight:-d language:console -->
 	$ gsh [-l]
