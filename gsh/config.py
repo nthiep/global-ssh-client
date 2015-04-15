@@ -29,9 +29,9 @@ if dg.lower() == 'true':
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 # check if not debug mode
-logging = logging.getLogger()
+logger = logging.getLogger()
 if not DEBUG:
-	logging.disabled = True
+	logger.disabled = True
 # Configuration variable
 # get mac address
 _node 		= "%12X" %uuid.getnode()
@@ -44,7 +44,7 @@ NET_DIR		= os.path.join(GSH_DIR, "net")
 KEY_FILE 	= os.path.join(GSH_DIR, "gsh.key")
 
 # connect server
-SERVER 		= "172.16.8.1"
+SERVER 		= "gssh.koding.io"
 PORT	 	= 8080
 
 # ssh server config

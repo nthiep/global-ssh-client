@@ -4,7 +4,7 @@
 # Description:	keep connection to webservice
 #
 
-import sys, os, time, thread, socket, json, uuid, crypt, getpass, spwd
+import sys, os, time, thread
 import logging.handlers, logging
 from threading import Thread
 from gsh import Server

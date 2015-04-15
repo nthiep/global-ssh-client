@@ -6,7 +6,7 @@
 
 from threading 	import Thread
 from gsh 		import Connection
-from gsh.config import logging
+from gsh.config import logger
 
 class Server(Thread):
 	"""docstring for Server """
@@ -25,6 +25,6 @@ class Server(Thread):
 		work 		= data["work"]
 		sport 		= data["sport"]
 		if self.connection.get_connect_server(exaddr, addr, port, work, myport, sport):
-			logging.debug("Server: connection success")
+			logger.debug("Server: connection success")
 			return
-		logging.debug("Server: connection false")
+		logger.debug("Server: connection false")

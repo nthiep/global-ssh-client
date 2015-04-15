@@ -17,18 +17,18 @@ class Request(object):
 
 	def setverbose(self):
 		""" set enable verbose mode """
-		logging.disabled = False
+		logger.disabled = False
 	def keepconnect(self):
 		connect = JsonSocket(JsonSocket.TCP)
 		if connect.connect(SERVER, PORT):
 			data = ({"request": "keepconnect", "mac": MAC_ADDR,
 			 "hostname": connect.gethostname(),"platform": PLATFORM})
 			connect.send_obj(data)
-			logging.debug("keepconnect: had send request")
+			logger.debug("keepconnect: had send request")
 			data = connect.read_obj()
-			logging.debug("keepconnect: recv %s" %str(data))
+			logger.debug("keepconnect: recv %s" %str(data))
 			return connect
-		logging.debug('keepconnect: can not connect')
+		logger.debug('keepconnect: can not connect')
 		return False
 	def register(self, user, passwork, fullname ="", email="", website=""):
 		connect = JsonSocket(JsonSocket.TCP)
@@ -36,11 +36,11 @@ class Request(object):
 			pswd = hashlib.md5(passwork).hexdigest()
 			data = ({"request": "register", "username": user, "passwork": pswd, "fullname": fullname, "email": email, "website": website})
 			connect.send_obj(data)
-			logging.debug("register: had send request")
+			logger.debug("register: had send request")
 			data = connect.read_obj()
 			connect.close()
 			self.out.register(data)
-			logging.debug("register: recv response")
+			logger.debug("register: recv response")
 			return True
 		return False
 
@@ -70,7 +70,7 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			logging.debug("login: recv %s" %str(data))
+			logger.debug("login: recv %s" %str(data))
 			if data["response"]:		
 				self.save_token(data["token"])
 				return self.authuser()
@@ -90,7 +90,7 @@ class Request(object):
 			data = connect.read_obj()
 			connect.close()
 			self.out.authuser(data)
-			logging.debug("authuser: recv response")
+			logger.debug("authuser: recv response")
 			return True
 		return False
 	def authnetwork(self):						
@@ -111,7 +111,7 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			logging.debug("authnetwork: recv response")
+			logger.debug("authnetwork: recv response")
 			return True
 		return False
 
@@ -124,7 +124,7 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			logging.debug("createnetwork: recv %s" %str(data))
+			logger.debug("createnetwork: recv %s" %str(data))
 			if netname:
 				netname += "_"
 			fname = NET_DIR + netname + data["response"][:24] + ".net"
@@ -154,13 +154,13 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			logging.debug("addnetwork: recv response")
+			logger.debug("addnetwork: recv response")
 			if data["response"]:
 				fname = NET_DIR + data["netname"] + "_"+ key[:24] + ".net"
 				f = open(fname, 'w')
 				f.write(key)
 				f.close()
-				logging.debug("addnetwork: add key file")
+				logger.debug("addnetwork: add key file")
 				self.out.addnetwork(True)
 
 				return self.authnetwork()
@@ -221,7 +221,7 @@ class Request(object):
 				connect.send_obj(data)
 				data = connect.read_obj()
 				connect.close()
-				logging.debug("renetwork: recv response")
+				logger.debug("renetwork: recv response")
 				self.out.renetwork(True, True)
 				return True
 		return False
@@ -236,7 +236,7 @@ class Request(object):
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			logging.debug("listmachine: recv data")
+			logger.debug("listmachine: recv data")
 			self.out.listmachine(data)
 			return True
 		return False
@@ -251,7 +251,7 @@ class Request(object):
 			return q
 		return False
 	def _check_division(self, host):
-		q = isuser.strip().split(":")
+		q = host.strip().split(":")
 		if len(q) == 2:
 			return q[0], q[1]
 		if len(q) == 7:
@@ -271,23 +271,25 @@ class Request(object):
 			sfile 	= False
 			if q:
 				user, peer = q
-			q, = self._check_division(peer)
-			if q:
-				peer, s = self._check_division(peer)
+			p, s = self._check_division(peer)
+			if p:
 				if s.isdigit():
 					sport = int(s)
 				else:
 					if options.service == "scp":
 						sfile = s
-			if self._check_ismac(peer):
-				macpeer = peer	
+				if self._check_ismac(p):
+					macpeer = p
+			else:
+				if self._check_ismac(peer):
+					macpeer = peer
 			laddr, lport = connect.getsockname()
 			data = ({"request": "connect", "mac": MAC_ADDR, "apikey": apikey,
 			 "peer": peer, "macpeer": macpeer, "laddr": laddr, "lport": lport, "sport": sport })
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
-			logging.debug("connect: recv %s" %str(data))
+			logger.debug("connect: recv %s" %str(data))
 			if data["response"]:
 				if data["choice"]:
 					macpeer = self.out.connect(data)
@@ -296,7 +298,7 @@ class Request(object):
 							macpeer = user + "@" + macpeer
 						return self.connect(macpeer, port)
 					return False
-				client = Client(data, laddr, lport, user, options, args, sfile)
+				client = Client(data, laddr, lport, user, sport, options, args, sfile)
 				client.run()
 				return True
 			self.out.connect(False)
@@ -331,8 +333,8 @@ class Request(object):
 					data = self.checknat_conn(int(data["port"], lport, True))
 				else:
 					data = self.checknat_conn(int(data["port"]), lport)
-				logging.debug("checknat: checknat")
-			logging.debug("checknat: checknat success")
+				logger.debug("checknat: checknat")
+			logger.debug("checknat: checknat success")
 			return True
 		return False
 		
@@ -353,10 +355,10 @@ class Request(object):
 			connect.close()
 			if data["response"]:
 				if self.del_token():
-					logging.debug("logout: delete key file success!")
+					logger.debug("logout: delete key file success!")
 				else:
-					logging.debug("logout: can not delete key!")			
+					logger.debug("logout: can not delete key!")			
 			self.out.logout(data)
-			logging.debug("logout: Done!")
+			logger.debug("logout: Done!")
 			return True
 		return False

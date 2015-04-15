@@ -11,7 +11,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Util import randpool
 from Crypto.Cipher import AES
 from Crypto import Random
-from gsh.config import logging
+from gsh.config import logger
 
 class Secure(object):
 	"""docstring for Secure"""
@@ -66,19 +66,19 @@ class JsonSocket(object):
 				self.socket.connect( (address, port) )
 				self.socket.send(pickle.dumps(rsapub))
 				recv = self.socket.recv(1024)
-				logging.debug("socket: connected to server")
+				logger.debug("socket: connected to server")
 			except socket.error as msg:
-				logging.debug("socket: %s" %msg)
-				logging.debug("socket: can not connect to server")
+				logger.debug("socket: %s" %msg)
+				logger.debug("socket: can not connect to server")
 				return False
 		else:
 			try:
 				self.socket.sendto((address, port), pickle.dumps(rsapub))
 				recv, addr = socket.recvfrom(1024)
-				logging.debug("socket: UDP connected to server")
+				logger.debug("socket: UDP connected to server")
 			except socket.error as msg:
-				logging.debug("socket: %s" %msg)
-				logging.debug("socket: UDP can not connect to server")
+				logger.debug("socket: %s" %msg)
+				logger.debug("socket: UDP can not connect to server")
 				return False
 
 		key = private.decrypt(recv)
