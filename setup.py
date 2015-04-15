@@ -1,16 +1,22 @@
 #!/usr/bin/env python
 import os, sys, platform
-from gsh.config import *
 from setuptools import setup
 # Version info -- read without importing
 _locals = {}
 with open(os.path.join("gsh", "_version.py")) as fp:
     exec(fp.read(), None, _locals)
 version = _locals['__version__']
+
+windows = True if platform.system() == "Windows" else False
 # setup init file
-init = ['etc/init.d/gshd']
-if platform.linux_distribution()[0].lower() == 'centos':
-      init = ['etc/init.d/gshd-centos']
+init     = []
+datafile = []
+if not windows:
+      scripts = ['bin/gsh', 'bin/gshd']
+      init = ['etc/init.d/gshd']
+      if platform.linux_distribution()[0].lower() == 'centos':
+            init = ['etc/init.d/gshd-centos']
+      datafile = [('/etc/init.d', init), ('/etc/gsh', ['etc/gsh/gsh.conf'])]
 with open('requirements.txt') as f:
     required = f.read().splitlines()
 setup(name        ='gsh',
@@ -24,9 +30,8 @@ setup(name        ='gsh',
       install_requires    = required,
       license     ='GNU',
       platforms   = 'Posix; Windows',
-      scripts     =['bin/gsh', 'bin/gshd'],
-      data_files  =[('/etc/init.d', init),
-                  ('/etc/gsh', ['etc/gsh/gsh.conf'])]
+      scripts     = scripts,
+      data_files  = datafile 
      )
 if sys.argv[1] == 'install':
       if windows:
