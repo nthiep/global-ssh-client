@@ -14,6 +14,7 @@ import os, sys, getpass
 from optparse 	import OptionParser
 from optparse 	import OptionGroup
 from gsh 		import Request, __version__
+from gsh.config import windows
 request = Request()
 def Main():
 	parser = OptionParser(description='global ssh help connect ssh behind NAT',
@@ -60,10 +61,11 @@ def Main():
 	options, args = parser.parse_args()
 	processparser(options, args)
 def superuser():
-	if os.geteuid() != 0:
-		args = ['sudo', sys.executable] + sys.argv + [os.environ]
-		# the next line replaces the currently-running process with the sudo
-		os.execlpe('sudo', *args)
+	if not windows:
+		if os.geteuid() != 0:
+			args = ['sudo', sys.executable] + sys.argv + [os.environ]
+			# the next line replaces the currently-running process with the sudo
+			os.execlpe('sudo', *args)
 
 def processparser(options, args):
 
