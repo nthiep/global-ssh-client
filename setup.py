@@ -43,7 +43,7 @@ if sys.argv[1] == 'install':
             os.system("chmod +x /etc/init.d/gshd")
             print "chmod success.----ok"
             print "chmod for gsh.conf ..."
-            os.system("chmod +r /etc/gsh/gsh.conf")
+            os.system("chmod 766 /etc/gsh/gsh.conf")
             print "chmod success.----ok"
       """
             print "create run level rc.d ..."
