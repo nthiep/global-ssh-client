@@ -62,6 +62,12 @@ def Main():
 
 	options, args = parser.parse_args()
 	processparser(options, args)
+	"""
+	try:
+		processparser(options, args)
+	except Exception as e:
+		print "* ERROR: %s" %e
+	"""
 def superuser():
 	if not windows:
 		if os.geteuid() != 0:

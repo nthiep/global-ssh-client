@@ -385,7 +385,8 @@ class Request(object):
 		return False, False
 
 	def connect(self, peer, options, args):
-		connect = JsonSocket(JsonSocket.TCP)
+		connect = JsonSocket(JsonSocket.TCP)		
+		connect.set_reuseaddr()
 		if connect.connect(SERVER, PORT):
 			sport 	= False
 			macpeer = False

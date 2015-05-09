@@ -19,15 +19,31 @@ Description: Global-SSH
         	hostname can use MAC address
         option:
         <!-- highlight:-d language:console -->
-        	--connect=HOSTNAME  -c [user@]hostname or mac
-            -s *, --service=*   [user@]hostname -s service_command
-            -p *, --port=*      [user@]hostname -p port
-            -c *, --command=*   [user@]hostname -C command
-            -i *, --identity=*  [user@]hostname -i identity_file
-            -v, --verbose       [user@]hostname -v debugging mode
-            --cnet=*            [netname] create network
-            -n *, --net=*       -n [netname] add network
-            -r *, --rnet=*      -r [netname] remove network
+        	Options:
+        		--version             show program's version number and exit
+        		-h, --help            show this help message and exit
+        
+        	Network:
+        		-J, --join          Join a Domain
+        		-R, --register      Create new Domain
+        		-W *, --work=*      Join a Workgroup
+        		-C *, --create=*    [workgroup] create a Workgroup
+        		-D *, --delete=*    [workgroup] delete Workgroup
+        		-L, --logout        logout Domain or Workgroup
+        
+        	Connect:
+        		--connect=HOSTNAME  -c [user@]hostname or mac
+        		-s *, --service=*   [user@]hostname -s service_command
+        		-p *, --port=*      [user@]hostname -p port
+        		-c *, --command=*   [user@]hostname -c command
+        		-i *, --identity=*  [user@]hostname -i identity_file
+        		-v, --verbose       [user@]hostname -v debugging mode
+        
+        	Infomation:
+        		-l, --list          show peer online
+        		-I, --info          show infomation of machine
+        		-m *, --mac=*       -I -m hostname
+        
         show machines:
         <!-- highlight:-d language:console -->
         	$ gsh [-l]
