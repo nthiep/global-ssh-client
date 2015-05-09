@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import os, sys, platform
-from setuptools import setup
+try:
+      from setuptools import setup
+except:
+      from distutils.core import setup
 # Version info -- read without importing
 _locals = {}
 with open(os.path.join("gsh", "_version.py")) as fp:
