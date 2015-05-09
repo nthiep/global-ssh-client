@@ -18,6 +18,7 @@ class Connection(object):
 	def get_accept_connect(self):
 		""" request connection to peer """
 		connect = JsonSocket(JsonSocket.TCP)
+		connect.set_reuseaddr()
 		if not connect.connect(SERVER, PORT):
 			return False
 		laddr, lport = connect.getsockname()
