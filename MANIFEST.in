@@ -1,0 +1,6 @@
+#file
+include README.md
+include LICENSE
+include etc/gosh/gosh.conf
+include etc/init.d/goshd
+include etc/init.d/goshd-centos

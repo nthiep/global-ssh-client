@@ -7,7 +7,7 @@ How use Global-SSH:
 -------
 connect to machine:
 <!-- highlight:-d language:console -->
-	$gsh [user@]hostname
+	$gosh [user@]hostname
 	hostname can use MAC address
 option:
 <!-- highlight:-d language:console -->
@@ -38,23 +38,27 @@ option:
 
 show machines:
 <!-- highlight:-d language:console -->
-	$ gsh [-l]
+	$ gosh [-l]
 
 connect to other service:
 <!-- highlight:-d language:console -->
-	$ gsh hostname --port {port}
+	$ gosh hostname --port {port}
 	this will return local port
 to connect use:
 <!-- highlight:-d language:console -->
 	$ {service} [option] -p {port}
 
 
-How to install:
+How install:
 -------
-use git to clone gsh:
+install gosh from pypi:
+<!-- highlight:-d language:console -->
+	$ sudo pip install gosh
+
+Clone the repo global-sh:
 <!-- highlight:-d language:console -->
 	$ git clone https://github.com/nthiep/global-ssh.git
-or download zip/tar.gz file then extract file.
+download zip/tar.gz file then extract file.
 
 run setup tool:
 <!-- highlight:-d language:console -->
@@ -62,7 +66,7 @@ run setup tool:
 
 check service is running:
 <!-- highlight:-d language:console -->
-	$ sudo service gshd status
+	$ sudo service goshd status
 
 About project
 -------
