@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #
 # Name: 		Global SSH Client
 # Description:	help connect ssh between client behind NAT.

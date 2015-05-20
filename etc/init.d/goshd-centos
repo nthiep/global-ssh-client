@@ -1,13 +1,13 @@
 #!/bin/sh
 #
-# gshd - this script starts and stops the gshd-server daemon
+# goshd - this script starts and stops the goshd-server daemon
 #
 # chkconfig:   - 85 15 
-# description:  gshd is a persistent key-value database
-# processname: gshd-server
-# config:      /etc/gshd/gshd.conf
-# config:      /etc/sysconfig/gshd
-# pidfile:     /var/run/gshd.pid
+# description:  goshd is a persistent key-value database
+# processname: goshd-server
+# config:      /etc/goshd/goshd.conf
+# config:      /etc/sysconfig/goshd
+# pidfile:     /var/run/goshd.pid
 
 # Source function library.
 . /etc/rc.d/init.d/functions
@@ -18,15 +18,15 @@
 # Check that networking is up.
 [ "$NETWORKING" = "no" ] && exit 0
 
-gshd="/usr/bin/gshd"
-pidfile="/var/run/gshd.pid"
-prog=$(basename $gshd)
+goshd="/usr/bin/goshd"
+pidfile="/var/run/goshd.pid"
+prog=$(basename $goshd)
 
 start() {
     echo "start"
-    [ -x $gshd ] || exit 5
+    [ -x $goshd ] || exit 5
     echo -n $"Starting $prog: "
-    daemon --pidfile ${pidfile} $gshd &
+    daemon --pidfile ${pidfile} $goshd &
     retval=$?
     echo
     [ $retval -eq 0 ] && touch $lockfile
@@ -49,7 +49,7 @@ restart() {
 
 reload() {
     echo -n $"Reloading $prog: "
-    killproc $gshd -HUP
+    killproc $goshd -HUP
     RETVAL=$?
     echo
 }
