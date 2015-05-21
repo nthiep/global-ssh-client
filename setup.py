@@ -12,13 +12,14 @@ version = _locals['__version__']
 
 windows = True if platform.system().lower() == "windows" else False
 # setup init file
+
+scripts = ['bin/gosh', 'bin/goshd']
 init     = []
 datafile = []
 requires = []
 if os.system('ssh -V') or windows:
       requires = ["paramiko"]
 if not windows:
-      scripts = ['bin/gosh', 'bin/goshd']
       init = ['etc/init.d/other/gosh']
       if platform.linux_distribution()[0].lower() in ['ubuntu', 'debian']:
             init = ['etc/init.d/gosh']
