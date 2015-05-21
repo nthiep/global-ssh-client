@@ -27,12 +27,12 @@ class Client():
 
 		connection = Connection(self.data["session"])
 		connect_address = connection.get_connect_client(external_addr,\
-						addr, port, laddr, lport, work, self.myport, self.destination_port, bind_source)
+						addr, port, laddr, lport, work, self.myport, self.destination_port, self.bind_source)
 		if not connect_address:
 			logger.debug("client: can not connect")
 			return False
 
-		if options.bind:
+		if self.options.bind:
 			logger.debug("client: connection created at %s:%d" %connect_address)
 			sys.stdout.write('* INFO: Processing...')
 			while True:
@@ -84,9 +84,9 @@ class Client():
 					key = paramiko.RSAKey.from_private_key_file(key_path, password)
 				except:
 					print "wrong RSA password Key"	
-					passwd = getpass.getpass('%s password: ' % peeradd)
+					passwd = getpass.getpass('%s@%s password: ' % (self.user, connect_address[0]))
 			except:
-				passwd = getpass.getpass('%s password: ' % peeradd)
+				passwd = getpass.getpass('%s@%s password: ' % (self.user, connect_address[0]))
 
 			print('*** Global SSH Connecting... ***')
 			client.connect(connect_address[0], int(connect_address[1]), username = self.user, password = passwd, pkey = key)
