@@ -14,7 +14,7 @@ windows = True if platform.system().lower() == "windows" else False
 # setup init file
 
 scripts = ['bin/gosh', 'bin/goshd']
-init     = []
+init     = False
 datafile = []
 requires = []
 root        = os.path.abspath(os.sep)
@@ -30,9 +30,13 @@ config = False
 if not os.path.isfile(config_file):
       config = (os.path.dirname(config_file), ['etc/gosh/gosh.conf'])
 if config:
-      datafile = [('/etc/init.d', init), config]
+      if init:
+            datafile = [('/etc/init.d', init), config]
+      else:
+            datafile = [config]
 else:
-      datafile = [('/etc/init.d', init)]
+      if init:
+            datafile = [('/etc/init.d', init)]
 setup(name        ='gosh',
       version     =version,
       description ='Global SSH',
