@@ -20,6 +20,7 @@ class Request(object):
 	def setverbose(self):
 		""" set enable verbose mode """
 		logger.disabled = False
+		return True
 	def keepconnect(self):
 		connect = JsonSocket(JsonSocket.TCP)
 		if connect.connect(config.SERVER, config.PORT):
@@ -398,60 +399,68 @@ class Request(object):
 		if len(q) == 2:
 			return q
 		return False
-	def _check_division(self, host):
-		q = host.strip().split(":")
-		if len(q) == 2:
-			return q[0], q[1]
-		if len(q) == 7:
-			return host.strip()[:17], q[7]
-		return False, False
-	def _check_workgroup(self):
-		pass
-	def connect(self, peer, options, args):
+	def _check_host_port(self, host):
+		query = host.strip().split(":")
+		if len(query) == 2 and query[1].isdigit():
+			return query
+		if len(query) == 7 and query[7].isdigit():
+			return (host.strip()[:17], query[7])
+		return False
+	def _check_bind_port(self, bind):
+		""" check if bind options have source port """
+		query = bind.strip().split(":")
+		if len(query) == 2 and query[0].isdigit() and query[1].isdigit():
+			return query
+		return False
+	def connect(self, destination, options, args):
+		""" connect request """
+		destination_port 	= False
+		destination_user	= False
+		bind_source 		= False
+		if options.bind:
+			result = self._check_bind_port(options.bind)
+			if result:
+				bind_source, destination_port = result
+			elif options.bind.isdigit():
+				destination_port = options.bind
+			else:
+				self.out.bind(False)
+				return False
 		connect = JsonSocket(JsonSocket.TCP)		
 		connect.set_reuseaddr()
+		if options.port:
+			destination_port = options.port
+		if self._check_isuser(destination):
+			destination_user, destination = self._check_isuser(destination)
+		if self._check_host_port(destination): 
+			destination, destination_port = self._check_host_port(destination)
+
 		if connect.connect(config.SERVER, config.PORT):
-			sport 	= False
-			macpeer = False
-			user 	= False
-			sfile 	= False
-			if options.port:
-				sport = options.port
-			q = self._check_isuser(peer)
-			if q:
-				user, peer = q
-			p, s = self._check_division(peer)
-			if p:
-				if s.isdigit():
-					sport = int(s)
-				else:
-					if options.service == "scp":
-						sfile = s
-				if self._check_ismac(p):
-					macpeer = p
-			else:
-				if self._check_ismac(peer):
-					macpeer = peer
+
 			laddr, lport = connect.getsockname()
 			data = {"request": "connect", "token": config.ACCESS_TOKEN, "workgroup_id": config.WORKGROUP_ID,
 						"workgroup_secret": config.WORKGROUP_SECRET, "id_machine": config.ID_MACHINE,
-						"peer": peer, "macpeer": macpeer, "laddr": laddr, "lport": lport, "sport": sport }
+						"destination": destination, "laddr": laddr,
+						"lport": lport, "destination_port": destination_port }
 			connect.send_obj(data)
 			data = connect.read_obj()
 			connect.close()
 			logger.debug("connect: recv %s" %str(data))
 			if data["response"]:
 				if data["choice"]:
-					macpeer = self.out.connect(data)
-					if macpeer:
-						if user:
-							macpeer = user + "@" + macpeer
-						return self.connect(macpeer, port)
+					destination = self.out.connect(data)
+					if destination:
+						if destination_user:
+							destination = "%s@%s" %(destination_user, destination)
+						if destination_port:
+							destination = "%s:%s" %(destination, destination_port)
+						return self.connect(destination, options, args)
 					return False
-				client = Client(data, laddr, lport, user, sport, options, args, sfile)
+				client = Client(data, laddr, lport, destination_user, destination_port, options, args, bind_source)
 				client.run()
 				return True
-			self.out.connect(False)
+			logger.debug("connect: machine not found or not Accept")
+		self.out.connect(False)
 		return False
 
 

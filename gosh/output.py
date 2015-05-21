@@ -77,6 +77,11 @@ class Output(object):
 				return data["machine"][host-1]["mac"]
 			else:
 				return False
+	def bind(self, data):
+		if not bind:
+			print "* ERROR: bind port not valid!"
+			print "* INFO: use [bindsource:]bindport"
+			return True
 	def logout(self, data):
 		if data:
 			print "* RESULT: logout successful!"

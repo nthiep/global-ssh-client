@@ -13,7 +13,7 @@ import os, sys, getpass
 from optparse 	import OptionParser
 from optparse 	import OptionGroup
 from gosh 		import Request, __version__
-from gosh.config import windows
+from gosh.config import windows, DEBUG
 request = Request()
 def Main():
 	parser = OptionParser(description='Global SSH help connect SSH behind NAT',
@@ -37,7 +37,7 @@ def Main():
 
 	group = OptionGroup(parser, "Connect")	#create group of parser
 	group.add_option("-D", "--bind", metavar="*",
-        help="-D bind port") # add option parser
+        help="-D [bindport:]destport") # add option parser
 	group.add_option("-L", "--tunnel", metavar="*",
         help="-L port:host:port") # add option parser
 
@@ -60,15 +60,14 @@ def Main():
 	group.add_option("-n", "--nat", action ='store_true', default=False, 
         help="check nat type") # add option parser
 	parser.add_option_group(group)
-
 	options, args = parser.parse_args()
-	processparser(options, args)
-	"""
-	try:
+	if DEBUG or options.verbose:
 		processparser(options, args)
-	except Exception as e:
-		print "* ERROR: %s" %e
-	"""
+	else:
+		try:
+			processparser(options, args)
+		except Exception as e:
+			print "* ERROR: %s" %e
 def superuser():
 	if not windows:
 		if os.geteuid() != 0:

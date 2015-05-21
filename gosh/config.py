@@ -7,7 +7,7 @@
 import os, uuid, platform, logging
 from ConfigParser import ConfigParser
 
-windows = True if platform.system() == "Windows" else False
+windows = True if platform.system().lower() == "windows" else False
 # change config file if you move to another place
 root 		= os.path.abspath(os.sep)
 if windows:
@@ -124,3 +124,19 @@ STUN_PORT 	= 3478
 # ssh server config
 SSH_SERVER	= parser.get('config', 'ssh_server')
 SSH_PORT	= int(parser.get('config', 'ssh_port'))
+
+# localhost address
+LOCALHOST	= parser.get('config', 'localhost')
+# accept machine
+mac_access	= parser.get('access', 'mac_access')
+if mac_access.lower() == 'true':
+	MAC_ACCESS = 'true'
+elif mac_access.lower() == 'false':
+	MAC_ACCESS = 'false'
+else:
+	MAC_ACCESS = 'none'
+
+try:
+	MAC_LIST = json.loads(parser.get("access","mac_list"))
+except:
+	MAC_LIST = []

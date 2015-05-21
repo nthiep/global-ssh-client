@@ -45,7 +45,7 @@ class Handle():
 	def process(self, data):
 		if 'response' in data:
 			if data["response"] == "bind":
-				connbind = Server(data["session"])
+				connbind = Server(data["session"], data["machine"])
 				connbind.start()
 		return True
 
