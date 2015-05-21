@@ -17,16 +17,22 @@ scripts = ['bin/gosh', 'bin/goshd']
 init     = []
 datafile = []
 requires = []
+root        = os.path.abspath(os.sep)
 if os.system('ssh -V') or windows:
       requires = ["paramiko"]
-if not windows:
+      config_file = os.path.join(root, "gosh", "gosh.conf")
+else:
       init = ['etc/init.d/other/gosh']
       if platform.linux_distribution()[0].lower() in ['ubuntu', 'debian']:
             init = ['etc/init.d/gosh']
-      config = ("","")
-      if not os.path.isfile("/etc/gosh/gosh.conf"):
-            config = ('/etc/gosh', ['etc/gosh/gosh.conf'])
+      config_file = os.path.join(root, "etc", "gosh", "gosh.conf")
+config = False
+if not os.path.isfile(config_file):
+      config = (os.path.dirname(config_file), ['etc/gosh/gosh.conf'])
+if config:
       datafile = [('/etc/init.d', init), config]
+else:
+      datafile = [('/etc/init.d', init)]
 setup(name        ='gosh',
       version     =version,
       description ='Global SSH',
