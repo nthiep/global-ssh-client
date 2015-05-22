@@ -237,10 +237,10 @@ class Connection(object):
 			return conn
 		return False
 
-	def udp_hole_connect_sending(self, udp, time):
+	def udp_hole_connect_sending(self, udp, t):
 		while not self.UDP_HOLE:
 			udp.sendto(self.session, self.udp_hole_addr)
-			time.sleep(time)
+			time.sleep(t)
 	def udp_hole_connect(self):
 		connect = JsonSocket(JsonSocket.TCP)
 		if not connect.connect(config.SERVER, config.PORT):
@@ -258,6 +258,7 @@ class Connection(object):
 		logger.debug("udp_hole_connect: stating connection")
 		udp = JsonSocket(JsonSocket.UDP)
 		req = {"session": self.session}
+		udp.set_timeout(10.0)
 		udp.connect(config.SERVER, port)
 		udp.send_obj( req )		
 		logger.debug("udp_hole_connect: send udp to server %d" %port)
@@ -266,7 +267,6 @@ class Connection(object):
 		logger.debug("udp_hole_connect: recv %s:%s" %(peer["host"], peer["port"]))
 		udp = udp.get_conn()
 		print "send first"
-		udp.settimeout(5)
 		udp.sendto(self.session, (peer["host"], int(peer["port"])))
 		logger.debug("udp_hole_connect: udp sendto peer")
 		self.UDP_HOLE = False
@@ -409,11 +409,12 @@ class Connection(object):
 			logger.debug("connect_process: udp hole punching connect")
 			result = self.udp_hole_connect()
 			if result:
+				conn, target = result
 				logger.debug("connect_process: got connection")
-				return result
+				return conn, target
 
 			logger.debug("connect_process: not connection")
-			return False
+			return False, False
 
 		logger.debug("connect_process: request relay connect")
 		return False
