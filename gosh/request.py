@@ -95,7 +95,6 @@ class Request(object):
 		return False
 
 	def get_token(self, domain, password):
-		from gosh.config import *
 		path = "/api/o/token/"
 		url = self.host + path
 		values = {"grant_type": "password", "username": domain, "password": password}

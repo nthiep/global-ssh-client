@@ -15,7 +15,7 @@ class Client():
 		self.destination_port 	= destination_port
 		self.options		= options
 		self.args 			= args
-		self.bind_source 	= bind_source
+		self.bind_source 	= int(bind_source)
 		self.user = "%s@" %destination_user if destination_user else ""
 	def run(self):
 		external_addr 		= self.data["external"]
@@ -55,12 +55,12 @@ class Client():
 			arguments = tunnel + verbose + identity
 			args = ' '.join(self.args[2:])
 			connect_host, connect_port = connect_address
-			logger.debug("client: SSH connect use open ssh to %s%s -p %d" %(self.user, connect_host, connect_port))
+			logger.debug("client: SSH connect use open ssh to %s%s" %(self.user, connect_host))
 			os.system("ssh %s %s%s -p %d %s" % (arguments, self.user, connect_host, connect_port, args))
 
 			return True
 
-	def ssh_client(self, connect_address):		
+	def ssh_client(self, connect_address):
 		from gosh import interactive
 		import paramiko
 		import traceback

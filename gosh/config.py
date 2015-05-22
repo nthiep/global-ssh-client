@@ -137,6 +137,6 @@ else:
 	MAC_ACCESS = 'none'
 
 try:
-	MAC_LIST = json.loads(parser.get("access","mac_list"))
+	MAC_LIST = parser.get("access","mac_list").lower().split(';')
 except:
 	MAC_LIST = []

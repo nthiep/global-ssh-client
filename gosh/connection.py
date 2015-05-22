@@ -18,8 +18,8 @@ class Connection(object):
 	def get_accept_connect(self, machine):
 		""" request connection to peer """
 		reload(config)
-		if (config.MAC_ACCESS == 'true' and machine not in config.MAC_LIST) \
-			or (config.MAC_ACCESS == 'false' and machine in config.MAC_LIST):
+		if (config.MAC_ACCESS == 'true' and machine.lower() not in config.MAC_LIST) \
+			or (config.MAC_ACCESS == 'false' and machine.lower() in config.MAC_LIST):
 			data = {"request": "accept_connect", "session": self.session,
 					"id_machine": config.ID_MACHINE, "mac_accept": False}
 			connect = JsonSocket(JsonSocket.TCP)
@@ -237,6 +237,10 @@ class Connection(object):
 			return conn
 		return False
 
+	def udp_hole_connect_sending(self, udp, time):
+		while not self.UDP_HOLE:
+			udp.sendto(self.session, self.udp_hole_addr)
+			time.sleep(time)
 	def udp_hole_connect(self):
 		connect = JsonSocket(JsonSocket.TCP)
 		if not connect.connect(config.SERVER, config.PORT):
@@ -258,24 +262,31 @@ class Connection(object):
 		udp.send_obj( req )		
 		logger.debug("udp_hole_connect: send udp to server %d" %port)
 		peer = udp.read_obj()
+		print peer
 		logger.debug("udp_hole_connect: recv %s:%s" %(peer["host"], peer["port"]))
 		udp = udp.get_conn()
+		print "send first"
+		udp.settimeout(5)
 		udp.sendto(self.session, (peer["host"], int(peer["port"])))
 		logger.debug("udp_hole_connect: udp sendto peer")
-		addr = (peer["host"], int(peer["port"]))
-		while True:
-			read,_,_ = select( [0, udp], [], [] )
-			if 0 in read:
-				udp.sendto(self.session, addr )
-			elif udp in read:
-				data, addr = udp.recvfrom( 1024 )
-				logger.debug("udp_hole_connect: recvfrom peer %s:%d" %(addr))
-				if data == self.session:
-					udp.sendto(self.session, addr)
-					logger.debug("udp_hole_connect: got connection")
-					return udp, addr
+		self.UDP_HOLE = False
+		self.udp_hole_addr = (peer["host"], int(peer["port"]))
+		thread.start_new_thread(self.udp_hole_connect_sending, (udp, 0.2))
+		try:
+			data, self.udp_hole_addr = udp.recvfrom( 1024 )
+			logger.debug("udp_hole_connect: recvfrom peer %s:%d" %(addr))
+		except:
+			logger.debug("udp_hole_connect: can not connect")
+			self.UDP_HOLE = True
+			return False
+		if data == self.session:
+			udp.sendto(self.session, self.udp_hole_addr)
+			logger.debug("udp_hole_connect: got connection")
+			udp.settimeout(None)
+			self.UDP_HOLE = True
+			return (udp, addr)
 		logger.debug("udp_hole_connect: can not connect")
-		return False, False
+		return False
 	def relay_connect(self):
 		""" connect to relay server """
 		# get request connect to relay server
@@ -396,13 +407,13 @@ class Connection(object):
 		# a and b connect UDP hole punching
 		if work == UHOLE:
 			logger.debug("connect_process: udp hole punching connect")
-			sock, target = self.udp_hole_connect()
-			if sock:
+			result = self.udp_hole_connect()
+			if result:
 				logger.debug("connect_process: got connection")
-				return sock, target
+				return result
 
 			logger.debug("connect_process: not connection")
-			return False, False
+			return False
 
 		logger.debug("connect_process: request relay connect")
 		return False
