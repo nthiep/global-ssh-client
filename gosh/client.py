@@ -5,7 +5,7 @@
 #
 import os, sys, getpass, time
 from gosh 		import Connection
-from gosh.config import logger, windows
+from gosh.config import logger, windows, GOSH_DIR
 class Client():
 	"""docstring for Client"""
 	def __init__(self, data, myaddr, myport, destination_user, destination_port, options, args, bind_source):	
@@ -63,15 +63,18 @@ class Client():
 	def ssh_client(self, connect_address):
 		from gosh import interactive
 		import paramiko
-		import traceback
-		paramiko.util.log_to_file( os.path.join(os.environ['HOME'], 'gosh.log'))
+		from os.path import expanduser
+		HOME = expanduser("~")
+		paramiko.util.log_to_file( GOSH_DIR, 'gosh.log')
 		try:
 			client = paramiko.SSHClient()
 			client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 			client.load_system_host_keys()
-			key_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
+			key_path = os.path.join(HOME, '.ssh', 'id_rsa')
 			if self.user == "":
 				self.user = getpass.getuser()
+			else:
+				self.user = self.user.strip("@")
 			passwd = None
 			key = None
 			try:
@@ -84,9 +87,9 @@ class Client():
 					key = paramiko.RSAKey.from_private_key_file(key_path, password)
 				except:
 					print "wrong RSA password Key"	
-					passwd = getpass.getpass('%s@%s password: ' % (self.user, connect_address[0]))
+					passwd = getpass.getpass('%s@%s password: ' % (self.user, str(connect_address[0])))
 			except:
-				passwd = getpass.getpass('%s@%s password: ' % (self.user, connect_address[0]))
+				passwd = getpass.getpass('%s@%s password: ' % (self.user, str(connect_address[0])))
 
 			print('*** Global SSH Connecting... ***')
 			client.connect(connect_address[0], int(connect_address[1]), username = self.user, password = passwd, pkey = key)
@@ -105,7 +108,6 @@ class Client():
 			sys.exit(1)
 		except Exception as e:
 			print('*** Caught exception: %s: %s' % (e.__class__, e))
-			traceback.print_exc()
 			try:
 				client.close()
 			except:

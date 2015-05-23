@@ -38,7 +38,8 @@ class Request(object):
 				save_machine(id_machine)
 				reload(config)
 			else:
-				logger.debug("keepconnect: Not keep connect")
+				logger.debug("keepconnect: %s" %data["message"])
+				os._exit(1)
 				return False
 			return connect
 		logger.debug('keepconnect: can not connect')

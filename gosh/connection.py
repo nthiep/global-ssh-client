@@ -15,6 +15,8 @@ class Connection(object):
 	def __init__(self, session):
 		self.session	= session
 		self.dest_port 		= 22
+		self.tcp_timeout	= 5.0
+		self.udp_timeout 	= 10.0
 	def get_accept_connect(self, machine):
 		""" request connection to peer """
 		reload(config)
@@ -59,6 +61,7 @@ class Connection(object):
 			except Exception as e:
 				logger.debug("tcp_forward: disconnect %s" %str(e))
 				break
+		sys.exit(1)
 
 	def udp_tcp_forward(self, udp, target, tcp):
 		data = ' '		
@@ -78,6 +81,7 @@ class Connection(object):
 				print e
 				logger.debug("udp-tcp: disconnect")
 				break
+		sys.exit(1)
 	def tcp_udp_forward(self, tcp, udp, target):
 		data = ' '
 		while data:
@@ -88,13 +92,14 @@ class Connection(object):
 				print e
 				logger.debug("udp-tcp: disconnect")
 				break
+		sys.exit(1)
 
 
 	def accept_local(self, port):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.bind(("", port))
-		sock.settimeout(2.0)
+		sock.settimeout(self.tcp_timeout)
 		sock.listen(5)
 
 		logger.debug("accept_local: listening on port %d" %port)
@@ -118,7 +123,7 @@ class Connection(object):
 	def connect_direct(self, addr, port):
 		""" connect to via direct """
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		sock.settimeout(2.0)
+		sock.settimeout(self.tcp_timeout)
 		if not sock.connect_ex((addr, port)):			
 			logger.debug("connect_direct: connected to %s:%d" %(addr, port))
 			sock.settimeout(None)
@@ -130,7 +135,7 @@ class Connection(object):
 	def connect_local(self, addr, port):
 		""" check connect right local """
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		sock.settimeout(2.0)
+		sock.settimeout(self.tcp_timeout)
 		if not sock.connect_ex((addr, port)):			
 			logger.debug("connect_local: connected to %s:%d" %(addr, port))
 			data = sock.recv(1024)
@@ -168,7 +173,7 @@ class Connection(object):
 	def listen(self, myport):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		sock.settimeout(2.0)
+		sock.settimeout(self.tcp_timeout)
 		sock.bind(("", myport))		
 		logger.debug("listen: listening on port %d" %myport)
 		sock.listen(5)
@@ -188,7 +193,7 @@ class Connection(object):
 		logger.debug("hole_connecting: connect to %s:%d" %(addr, port))
 		err = 1
 		i = 0
-		conn.settimeout(5.0)
+		conn.settimeout(self.tcp_timeout)
 		while err != 0 and i < 10:
 			err = conn.connect_ex((addr, port))			
 			logger.debug("hole_connecting: trying connect %d" %i)
@@ -258,11 +263,15 @@ class Connection(object):
 		logger.debug("udp_hole_connect: stating connection")
 		udp = JsonSocket(JsonSocket.UDP)
 		req = {"session": self.session}
-		udp.set_timeout(10.0)
+		udp.set_timeout(self.udp_timeout)
 		udp.connect(config.SERVER, port)
 		udp.send_obj( req )		
 		logger.debug("udp_hole_connect: send udp to server %d" %port)
-		peer = udp.read_obj()
+		try:
+			peer = udp.read_obj()
+		except:
+			logger.debug("udp_hole_connect: peer not response")
+			return False
 		print peer
 		logger.debug("udp_hole_connect: recv %s:%s" %(peer["host"], peer["port"]))
 		udp = udp.get_conn()
@@ -497,7 +506,7 @@ class Connection(object):
 				thread.start_new_thread(self.listen_tcp, (sock, conn))
 				return (config.LOCALHOST, bind_port)
 
-		logger.debug("connect_client: not connection")
+		logger.debug("connect_client: not connection to peer")
 		# if server had down or peer had disconnect
 		# connect false
 		return False

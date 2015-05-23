@@ -7,7 +7,7 @@
 import sys, os, time, thread
 import logging.handlers, logging
 from threading import Thread
-from gosh import Server
+from gosh import Server, __version__
 from gosh import Request
 from gosh.config import *
 # Deafults
@@ -19,12 +19,11 @@ class MyLogger(object):
 		"""Needs a logger and a logger level."""
 		self.logger = logger
 		self.level = level
- 
 	def write(self, message):
 		# Only log if there is a message (not just a new line)
 		if message.rstrip() != "":
 			self.logger.log(self.level, message.rstrip())
- 
+
 
 class Handle():
 	"""Handle keep conect with server"""
@@ -34,7 +33,7 @@ class Handle():
 	def reconnect(self):
 		i = 1
 		while not self.connection and i <= 5:
-			print "reconnect to server..."
+			print "* INFO: Reconnect to server..."
 			time.sleep(2 * i)
 			self.connection = self.request.keepconnect()
 			i +=1
@@ -43,12 +42,19 @@ class Handle():
 		return True
 		
 	def process(self, data):
-		if 'response' in data:
-			if data["response"] == "bind":
-				connbind = Server(data["session"], data["machine"])
-				connbind.start()
-		return True
-
+		try:
+			response = data["response"]
+			connect = data["connect"]
+			session = data["session"]
+			machine = data["machine"]
+		except:
+			print "* ERROR: Response Not Accept"
+			return False
+		if response and connect:
+			conn_bind = Server(session, machine)
+			conn_bind.start()
+			return True
+		return False
 	def run(self):
 		self.connection = self.request.keepconnect()
 		if not self.connection:
@@ -62,31 +68,39 @@ class Handle():
 			except Exception, e:
 				print e
 				self.connection.close()
-				self.run()
+				if not self.reconnect():
+					continue
 			self.process(data)
 		self.connection.close()
 		os._exit(1)
 
 if __name__ == "__main__":
-	"""
-	logger = logging.getLogger(__name__)
-	# Set the log level to LOG_LEVEL
-	logger.setLevel(LOG_LEVEL)
-	# Make a handler that writes to a file, making a new file at midnight and keeping 3 backups
-	handler = logging.handlers.TimedRotatingFileHandler(LOG_FILENAME, when="midnight", backupCount=3)
-	# Format each log message like this
-	formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
-	# Attach the formatter to the handler
-	handler.setFormatter(formatter)
-	# Attach the handler to the logger
-	logger.addHandler(handler)
+	from optparse 	import OptionParser
+	parser = OptionParser(description='Global SSH Deamon help keepconnect Server',
+                                   prog='goshd',
+                                   version=__version__,
+                                   usage='%prog [options]')
+	parser.add_option("-l", "--log", action ='store_true', default=False, help="Show log")
+	options, args = parser.parse_args()
+	if options.log:
+		pass
+	else:
+		logger = logging.getLogger(__name__)
+		# Set the log level to LOG_LEVEL
+		logger.setLevel(LOG_LEVEL)
+		# Make a handler that writes to a file, making a new file at midnight and keeping 3 backups
+		handler = logging.handlers.TimedRotatingFileHandler(LOG_FILENAME, when="midnight", backupCount=3)
+		# Format each log message like this
+		formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+		# Attach the formatter to the handler
+		handler.setFormatter(formatter)
+		# Attach the handler to the logger
+		logger.addHandler(handler)
 
-		# Replace stdout with logging to file at INFO level
-	sys.stdout = MyLogger(logger, logging.INFO)
-	# Replace stderr with logging to file at ERROR level
-	sys.stderr = MyLogger(logger, logging.ERROR)
-	"""
-
+			# Replace stdout with logging to file at INFO level
+		sys.stdout = MyLogger(logger, logging.INFO)
+		# Replace stderr with logging to file at ERROR level
+		sys.stderr = MyLogger(logger, logging.ERROR)
  
 	exe = Handle()
 	exe.run()
