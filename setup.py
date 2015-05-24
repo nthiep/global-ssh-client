@@ -18,10 +18,12 @@ init     = False
 datafile = []
 requires = []
 root        = os.path.abspath(os.sep)
-if os.system('ssh -V') or windows:
+if windows:
       requires = ["paramiko"]
       config_file = os.path.join(root, "gosh", "gosh.conf")
 else:
+      if os.system('ssh -V >/dev/null 2>&1'):
+            requires = ["paramiko"]
       init = ['etc/init.d/other/gosh']
       if platform.linux_distribution()[0].lower() in ['ubuntu', 'debian']:
             init = ['etc/init.d/gosh']
