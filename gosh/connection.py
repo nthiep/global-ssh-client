@@ -430,7 +430,7 @@ class Connection(object):
 	def get_connect_client(self, exaddr, addr, port, laddr, lport, work, myport, dest_port, bind_source):
 		""" get port connected of client side """
 		if work == 'REV':
-			work == 'LIS'
+			work = 'LIS'
 		if dest_port:
 			self.dest_port = int(dest_port)
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
