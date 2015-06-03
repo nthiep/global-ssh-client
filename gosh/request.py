@@ -16,7 +16,7 @@ class Request(object):
 	"""send request to server"""
 	def __init__(self):
 		self.out = Output()
-		self.host = "http://%s:%d" %(config.WS_SERVER, config.WS_PORT)
+		self.host = "https://%s" %(config.WS_SERVER)
 	def setverbose(self):
 		""" set enable verbose mode """
 		logger.disabled = False

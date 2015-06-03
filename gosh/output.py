@@ -83,7 +83,7 @@ class Output(object):
 	def show_nat_type(self, mapping, filtering, nattype):
 		""" show nat infomation """
 		info_mapping = ["N/A",  "Endpoint Independent Mapping", "Address Dependent Mapping",\
-			"Address and Port Dependent Mapping","","","","","","","Internet"]
+			"Address and Port Dependent Mapping","","","","","","","Direct Mapping"]
 		info_filtering = ["N/A", "Endpoint Independent Filtering",\
 				"Address Dependent Filtering",  "Address and Port Dependent Filtering"]
 		print "* ============================ *"		

@@ -11,7 +11,7 @@ from gosh import Server, __version__
 from gosh import Request
 from gosh.config import *
 # Deafults
-LOG_LEVEL = logging.INFO  # Could be e.g. "DEBUG" or "WARNING"
+LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING"
 
 # Make a class we can use to capture stdout and sterr in the log
 class MyLogger(object):
@@ -85,9 +85,6 @@ if __name__ == "__main__":
 	if options.log:
 		pass
 	else:
-		logger = logging.getLogger(__name__)
-		# Set the log level to LOG_LEVEL
-		logger.setLevel(LOG_LEVEL)
 		# Make a handler that writes to a file, making a new file at midnight and keeping 3 backups
 		handler = logging.handlers.TimedRotatingFileHandler(LOG_FILENAME, when="midnight", backupCount=3)
 		# Format each log message like this
@@ -98,7 +95,7 @@ if __name__ == "__main__":
 		logger.addHandler(handler)
 
 			# Replace stdout with logging to file at INFO level
-		sys.stdout = MyLogger(logger, logging.INFO)
+		sys.stdout = MyLogger(logger, logging.DEBUG)
 		# Replace stderr with logging to file at ERROR level
 		sys.stderr = MyLogger(logger, logging.ERROR)
  

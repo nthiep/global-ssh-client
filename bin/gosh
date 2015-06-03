@@ -60,7 +60,11 @@ def Main():
 	parser.add_option_group(group)
 	options, args = parser.parse_args()
 	if DEBUG or options.verbose:
-		processparser(options, args)
+		try:
+			processparser(options, args)
+		except KeyboardInterrupt:
+			print "\nCancel"
+			return
 	else:
 		try:
 			processparser(options, args)

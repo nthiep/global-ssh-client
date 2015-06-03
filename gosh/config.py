@@ -116,7 +116,6 @@ SERVER 		= "128.199.211.29"
 PORT	 	= 8080
 # web service config
 WS_SERVER 	= "128.199.211.29"
-WS_PORT 	= 80
 
 # stun server config
 STUN_SERVER = "128.199.211.29"

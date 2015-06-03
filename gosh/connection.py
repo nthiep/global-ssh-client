@@ -241,7 +241,6 @@ class Connection(object):
 
 	def udp_hole_connect_sending(self, udp, t):
 		while not self.UDP_HOLE:
-			print "send %s:%d" %self.udp_hole_addr
 			udp.sendto(self.session, self.udp_hole_addr)
 			time.sleep(t)
 	def udp_hole_connect(self):
