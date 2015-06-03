@@ -71,3 +71,6 @@ if sys.argv[1] == 'install':
                   if not os.path.isfile("/etc/rc%d.d/K20gosh" %x):
                        os.system("ln -s /etc/init.d/gosh /etc/rc%d.d/K20gosh" %x)
             print "create success.----ok"
+            print "starting service gosh"
+            os.system("service gosh start")
+            print "OK...all success!"
