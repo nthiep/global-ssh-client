@@ -11,30 +11,34 @@ connect to machine:
 	hostname can use MAC address
 option:
 <!-- highlight:-d language:console -->
+	Usage: gosh [options] [user@][hostname]
+
+	Global SSH help connect SSH behind NAT
+
 	Options:
 		--version             show program's version number and exit
 		-h, --help            show this help message and exit
 
 	Network:
-		-J, --join          Join a Domain
-		-R, --register      Create new Domain
-		-W *, --work=*      Join a Workgroup
-		-C *, --create=*    [workgroup] create a Workgroup
-		-D *, --delete=*    [workgroup] delete Workgroup
-		-L, --logout        logout Domain or Workgroup
+		-j, --join          Join a Domain
+		-r, --register      Create new Domain
+		-g *, --group=*     Join a Workgroup
+		-c *, --create=*    [workgroup] create a Workgroup
+		-d *, --delete=*    [workgroup] delete Workgroup
+		-l, --logout        logout Domain or Workgroup
 
 	Connect:
-		--connect=HOSTNAME  -c [user@]hostname or mac
-		-s *, --service=*   [user@]hostname -s service_command
+		-D *, --bind=*      -D [bindport:]destport
+		-L *, --tunnel=*    -L port:host:port
 		-p *, --port=*      [user@]hostname -p port
-		-c *, --command=*   [user@]hostname -c command
 		-i *, --identity=*  [user@]hostname -i identity_file
 		-v, --verbose       [user@]hostname -v debugging mode
 
 	Infomation:
-		-l, --list          show peer online
 		-I, --info          show infomation of machine
 		-m *, --mac=*       -I -m hostname
+		-n, --nat           check nat type
+
 
 show machines:
 <!-- highlight:-d language:console -->
