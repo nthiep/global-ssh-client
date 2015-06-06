@@ -39,20 +39,6 @@ option:
 		-m *, --mac=*       -I -m hostname
 		-n, --nat           check nat type
 
-
-show machines:
-<!-- highlight:-d language:console -->
-	$ gosh [-l]
-
-connect to other service:
-<!-- highlight:-d language:console -->
-	$ gosh hostname --port {port}
-	this will return local port
-to connect use:
-<!-- highlight:-d language:console -->
-	$ {service} [option] -p {port}
-
-
 How install:
 -------
 install gosh from pypi:
